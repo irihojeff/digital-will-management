@@ -56,6 +56,71 @@ DECLARE
     e_invalid_transition EXCEPTION;
     PRAGMA EXCEPTION_INIT(e_invalid_transition, -20003);
     
+    -- Procedure for logging in audit_log
+    PROCEDURE log_audit(
+        p_user IN VARCHAR2,
+        p_action IN VARCHAR2,
+        p_table IN VARCHAR2,
+        p_id IN NUMBER,
+        p_old IN VARCHAR2,
+        p_new IN VARCHAR2,
+        p_status IN VARCHAR2,
+        p_ip IN VARCHAR2 DEFAULT NULL
+    ) IS
+        PRAGMA AUTONOMOUS_TRANSACTION;
+    BEGIN
+        INSERT INTO audit_log (
+            user_name, action, action_table, record_id, 
+            old_values, new_values, status, ip_address
+        ) VALUES (
+            p_user, p_action, p_table, p_id,
+            p_old, p_new, p_status, p_ip
+        );
+        COMMIT;
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+    END log_audit;
+    
+    -- Procedure for updating timestamp
+    PROCEDURE update_timestamp(p_id IN NUMBER) IS
+        PRAGMA AUTONOMOUS_TRANSACTION;
+        v_sql VARCHAR2(200);
+    BEGIN
+        v_sql := 'UPDATE wills SET last_updated_at = SYSDATE WHERE will_id = :1';
+        
+        EXECUTE IMMEDIATE v_sql USING p_id;
+        COMMIT;
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+            RAISE;
+    END update_timestamp;
+    
+    -- Procedure for inserting status history
+    PROCEDURE insert_status_history(
+        p_will_id IN NUMBER,
+        p_old_status IN VARCHAR2,
+        p_new_status IN VARCHAR2,
+        p_user IN VARCHAR2,
+        p_reason IN VARCHAR2
+    ) IS
+        PRAGMA AUTONOMOUS_TRANSACTION;
+    BEGIN
+        INSERT INTO will_status_history (
+            will_id, old_status, new_status,
+            changed_by, change_date, reason
+        ) VALUES (
+            p_will_id, p_old_status, p_new_status,
+            p_user, SYSDATE, p_reason
+        );
+        COMMIT;
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+            RAISE;
+    END insert_status_history;
+    
 BEGIN
     -- Only proceed if status actually changed
     IF :OLD.status != :NEW.status THEN
@@ -81,18 +146,13 @@ BEGIN
                 'Cannot change directly from Draft to Executing. Must be Approved first.');
         END IF;
         
-        -- Update last_updated_at via autonomous transaction to avoid mutating table issues
+        -- Update last_updated_at via autonomous transaction
         BEGIN
-            EXECUTE IMMEDIATE 
-                'UPDATE wills SET last_updated_at = SYSDATE WHERE will_id = :1'
-                USING :NEW.will_id;
+            update_timestamp(:NEW.will_id);
         EXCEPTION
             WHEN OTHERS THEN
                 -- Log error but continue with status history recording
-                INSERT INTO audit_log (
-                    user_name, action, action_table, record_id, 
-                    old_values, new_values, status, ip_address
-                ) VALUES (
+                log_audit(
                     v_user, 'UPDATE', 'WILLS', :NEW.will_id,
                     'Failed to update last_updated_at', SQLERRM, 
                     'ERROR', v_ip_address
@@ -100,71 +160,51 @@ BEGIN
         END;
         
         -- Insert status change history record
-        INSERT INTO will_status_history (
-            will_id,
-            old_status,
-            new_status,
-            changed_by,
-            change_date,
-            reason
-        ) VALUES (
-            :NEW.will_id,
-            :OLD.status,
-            :NEW.status,
-            v_user,
-            SYSDATE,
-            v_reason
-        );
+        BEGIN
+            insert_status_history(
+                :NEW.will_id,
+                :OLD.status,
+                :NEW.status,
+                v_user,
+                v_reason
+            );
+        EXCEPTION
+            WHEN OTHERS THEN
+                log_audit(
+                    v_user, 'UPDATE', 'WILLS', :NEW.will_id,
+                    'Failed to insert status history', SQLERRM, 
+                    'ERROR', v_ip_address
+                );
+        END;
         
         -- Additional logging in audit_log for comprehensive auditing
-        INSERT INTO audit_log (
-            user_name,
-            action,
-            action_table,
-            record_id,
-            old_values,
-            new_values,
-            timestamp,
-            status,
-            ip_address
-        ) VALUES (
-            v_user,
-            'UPDATE',
-            'WILLS',
-            :NEW.will_id,
-            '{"status":"' || :OLD.status || '"}',
-            '{"status":"' || :NEW.status || '"}',
-            SYSDATE,
-            'ALLOWED',
-            v_ip_address
-        );
-        
+        BEGIN
+            log_audit(
+                v_user, 'UPDATE', 'WILLS', :NEW.will_id,
+                '{"status":"' || :OLD.status || '"}',
+                '{"status":"' || :NEW.status || '"}',
+                'ALLOWED', v_ip_address
+            );
+        EXCEPTION
+            WHEN OTHERS THEN
+                NULL; -- Ignore errors in audit logging
+        END;
     END IF;
 
 EXCEPTION
     WHEN OTHERS THEN
         -- Log error in audit_log
-        INSERT INTO audit_log (
-            user_name,
-            action,
-            action_table,
-            record_id,
-            old_values,
-            new_values,
-            timestamp,
-            status,
-            ip_address
-        ) VALUES (
-            NVL(v_user, 'UNKNOWN'),
-            'UPDATE',
-            'WILLS',
-            :NEW.will_id,
-            '{"status":"' || :OLD.status || '"}',
-            '{"status":"' || :NEW.status || '"}',
-            SYSDATE,
-            'ERROR: ' || SQLERRM,
-            NVL(v_ip_address, 'UNKNOWN')
-        );
+        BEGIN
+            log_audit(
+                NVL(v_user, 'UNKNOWN'), 'UPDATE', 'WILLS', :NEW.will_id,
+                '{"status":"' || :OLD.status || '"}',
+                '{"status":"' || :NEW.status || '"}',
+                'ERROR: ' || SQLERRM, NVL(v_ip_address, 'UNKNOWN')
+            );
+        EXCEPTION
+            WHEN OTHERS THEN
+                NULL; -- Ignore errors in error logging
+        END;
         
         -- Re-raise the exception to inform the application
         RAISE;
@@ -186,23 +226,32 @@ AFTER INSERT OR UPDATE OR DELETE ON assets
 FOR EACH ROW
 DECLARE
     v_will_id NUMBER := NVL(:NEW.will_id, :OLD.will_id);
+    PRAGMA AUTONOMOUS_TRANSACTION;
 BEGIN
     IF v_will_id IS NOT NULL THEN
-        UPDATE wills
-        SET last_updated_at = SYSDATE
-        WHERE will_id = v_will_id;
+        BEGIN
+            EXECUTE IMMEDIATE 
+                'UPDATE wills SET last_updated_at = SYSDATE WHERE will_id = :1'
+                USING v_will_id;
+            COMMIT; -- Must commit in autonomous transaction
+        EXCEPTION
+            WHEN OTHERS THEN
+                ROLLBACK;
+                -- Log error through separate insert to avoid recursion
+                EXECUTE IMMEDIATE
+                    'INSERT INTO audit_log (user_name, action, action_table, record_id, old_values, new_values, status) 
+                     VALUES (:1, :2, :3, :4, :5, :6, :7)'
+                    USING 
+                    SYS_CONTEXT('USERENV', 'SESSION_USER'),
+                    'UPDATE', 
+                    'ASSETS', 
+                    NVL(TO_CHAR(:NEW.asset_id), TO_CHAR(:OLD.asset_id)),
+                    'Error updating wills.last_updated_at', 
+                    SQLERRM, 
+                    'ERROR';
+                COMMIT;
+        END;
     END IF;
-EXCEPTION
-    WHEN OTHERS THEN
-        -- Log error but don't stop the transaction
-        INSERT INTO audit_log (
-            user_name, action, action_table, record_id, 
-            old_values, new_values, status
-        ) VALUES (
-            SYS_CONTEXT('USERENV', 'SESSION_USER'),
-            'UPDATE', 'ASSETS', NVL(:NEW.asset_id, :OLD.asset_id),
-            'Error updating wills.last_updated_at', SQLERRM, 'ERROR'
-        );
 END;
 /
 
@@ -212,23 +261,32 @@ AFTER INSERT OR UPDATE OR DELETE ON executors
 FOR EACH ROW
 DECLARE
     v_will_id NUMBER := NVL(:NEW.will_id, :OLD.will_id);
+    PRAGMA AUTONOMOUS_TRANSACTION;
 BEGIN
     IF v_will_id IS NOT NULL THEN
-        UPDATE wills
-        SET last_updated_at = SYSDATE
-        WHERE will_id = v_will_id;
+        BEGIN
+            EXECUTE IMMEDIATE 
+                'UPDATE wills SET last_updated_at = SYSDATE WHERE will_id = :1'
+                USING v_will_id;
+            COMMIT; -- Must commit in autonomous transaction
+        EXCEPTION
+            WHEN OTHERS THEN
+                ROLLBACK;
+                -- Log error through separate insert to avoid recursion
+                EXECUTE IMMEDIATE
+                    'INSERT INTO audit_log (user_name, action, action_table, record_id, old_values, new_values, status) 
+                     VALUES (:1, :2, :3, :4, :5, :6, :7)'
+                    USING 
+                    SYS_CONTEXT('USERENV', 'SESSION_USER'),
+                    'UPDATE', 
+                    'EXECUTORS', 
+                    NVL(TO_CHAR(:NEW.executor_id), TO_CHAR(:OLD.executor_id)),
+                    'Error updating wills.last_updated_at', 
+                    SQLERRM, 
+                    'ERROR';
+                COMMIT;
+        END;
     END IF;
-EXCEPTION
-    WHEN OTHERS THEN
-        -- Log error but don't stop the transaction
-        INSERT INTO audit_log (
-            user_name, action, action_table, record_id, 
-            old_values, new_values, status
-        ) VALUES (
-            SYS_CONTEXT('USERENV', 'SESSION_USER'),
-            'UPDATE', 'EXECUTORS', NVL(:NEW.executor_id, :OLD.executor_id),
-            'Error updating wills.last_updated_at', SQLERRM, 'ERROR'
-        );
 END;
 /
 
@@ -239,8 +297,46 @@ FOR EACH ROW
 DECLARE
     v_will_id NUMBER;
     v_asset_id NUMBER := NVL(:NEW.asset_id, :OLD.asset_id);
-    e_no_data EXCEPTION;
-    PRAGMA EXCEPTION_INIT(e_no_data, -1403);
+    v_mapping_id VARCHAR2(30) := NVL(TO_CHAR(:NEW.mapping_id), TO_CHAR(:OLD.mapping_id));
+    
+    -- Procedure for updating last_updated_at in autonomous transaction
+    PROCEDURE update_will_timestamp(p_will_id IN NUMBER) IS
+        PRAGMA AUTONOMOUS_TRANSACTION;
+    BEGIN
+        EXECUTE IMMEDIATE 
+            'UPDATE wills SET last_updated_at = SYSDATE WHERE will_id = :1'
+            USING p_will_id;
+        COMMIT;
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+            RAISE;
+    END update_will_timestamp;
+    
+    -- Procedure for logging errors in autonomous transaction
+    PROCEDURE log_error(
+        p_action IN VARCHAR2,
+        p_record_id IN VARCHAR2,
+        p_old_values IN VARCHAR2,
+        p_new_values IN VARCHAR2,
+        p_status IN VARCHAR2
+    ) IS
+        PRAGMA AUTONOMOUS_TRANSACTION;
+    BEGIN
+        INSERT INTO audit_log (
+            user_name, action, action_table, record_id, 
+            old_values, new_values, status
+        ) VALUES (
+            SYS_CONTEXT('USERENV', 'SESSION_USER'),
+            p_action, 'WILL_ASSET_BENEFICIARIES', p_record_id,
+            p_old_values, p_new_values, p_status
+        );
+        COMMIT;
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+    END log_error;
+    
 BEGIN
     -- Only proceed if we have a valid asset ID
     IF v_asset_id IS NOT NULL THEN
@@ -252,30 +348,26 @@ BEGIN
             
             -- Update the will's timestamp if we found a valid will_id
             IF v_will_id IS NOT NULL THEN
-                UPDATE wills
-                SET last_updated_at = SYSDATE
-                WHERE will_id = v_will_id;
+                update_will_timestamp(v_will_id);
             END IF;
         EXCEPTION
-            WHEN e_no_data THEN
+            WHEN NO_DATA_FOUND THEN
                 -- Asset no longer exists, log the error
-                INSERT INTO audit_log (
-                    user_name, action, action_table, record_id, 
-                    old_values, new_values, status
-                ) VALUES (
-                    SYS_CONTEXT('USERENV', 'SESSION_USER'),
-                    'UPDATE', 'WILL_ASSET_BENEFICIARIES', NVL(:NEW.mapping_id, :OLD.mapping_id),
-                    'Asset ID ' || v_asset_id || ' not found', NULL, 'WARNING'
+                log_error(
+                    'UPDATE',
+                    v_mapping_id,
+                    'Asset ID ' || v_asset_id || ' not found',
+                    NULL,
+                    'WARNING'
                 );
             WHEN OTHERS THEN
                 -- Other errors, log them
-                INSERT INTO audit_log (
-                    user_name, action, action_table, record_id, 
-                    old_values, new_values, status
-                ) VALUES (
-                    SYS_CONTEXT('USERENV', 'SESSION_USER'),
-                    'UPDATE', 'WILL_ASSET_BENEFICIARIES', NVL(:NEW.mapping_id, :OLD.mapping_id),
-                    'Error updating wills.last_updated_at', SQLERRM, 'ERROR'
+                log_error(
+                    'UPDATE',
+                    v_mapping_id,
+                    'Error updating wills.last_updated_at',
+                    SQLERRM,
+                    'ERROR'
                 );
         END;
     END IF;
@@ -295,6 +387,7 @@ DECLARE
     v_current_asset_id NUMBER := :NEW.asset_id;
     v_asset_exists NUMBER;
     v_will_status VARCHAR2(20);
+    v_will_id NUMBER;
 BEGIN
     -- Validate asset_id is not NULL
     IF v_current_asset_id IS NULL THEN
@@ -310,24 +403,45 @@ BEGIN
         RAISE_APPLICATION_ERROR(-20011, 'Asset ID ' || v_current_asset_id || ' does not exist');
     END IF;
     
-    -- Check if the will is in a state where modifications are allowed
-    SELECT w.status INTO v_will_status
-    FROM wills w
-    JOIN assets a ON w.will_id = a.will_id
-    WHERE a.asset_id = v_current_asset_id;
-    
-    IF v_will_status = 'Executed' THEN
-        RAISE_APPLICATION_ERROR(-20012, 
-            'Cannot modify beneficiary shares for asset ID ' || v_current_asset_id || 
-            ' because the associated will has been executed');
-    END IF;
+    -- Get the will_id first, then check status in a separate query
+    BEGIN
+        SELECT will_id INTO v_will_id
+        FROM assets
+        WHERE asset_id = v_current_asset_id;
+        
+        IF v_will_id IS NULL THEN
+            RAISE_APPLICATION_ERROR(-20013, 
+                'Asset ID ' || v_current_asset_id || ' is not associated with a valid will');
+        END IF;
+        
+        -- Now check the will status
+        SELECT status INTO v_will_status
+        FROM wills
+        WHERE will_id = v_will_id;
+        
+        IF v_will_status = 'Executed' THEN
+            RAISE_APPLICATION_ERROR(-20012, 
+                'Cannot modify beneficiary shares for asset ID ' || v_current_asset_id || 
+                ' because the associated will has been executed');
+        END IF;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20013, 
+                'Asset ID ' || v_current_asset_id || ' is not associated with a valid will');
+    END;
     
     -- Calculate the total assigned share for the asset excluding the current mapping (if update)
-    SELECT NVL(SUM(share_percent), 0)
-    INTO v_total_share
-    FROM will_asset_beneficiaries
-    WHERE asset_id = v_current_asset_id
-      AND mapping_id != NVL(:NEW.mapping_id, -1); -- Exclude current row if update
+    BEGIN
+        SELECT NVL(SUM(share_percent), 0)
+        INTO v_total_share
+        FROM will_asset_beneficiaries
+        WHERE asset_id = v_current_asset_id
+          AND ((:NEW.mapping_id IS NULL AND mapping_id IS NOT NULL) OR 
+               (mapping_id != :NEW.mapping_id));
+    EXCEPTION
+        WHEN OTHERS THEN
+            v_total_share := 0; -- Default if the query fails
+    END;
     
     -- Add the new/updated share value
     v_total_share := v_total_share + NVL(:NEW.share_percent, 0);
@@ -340,8 +454,8 @@ BEGIN
     END IF;
     
     -- Warn if total share is significantly under 100% (e.g., less than 90%)
-    -- Using DBMS_OUTPUT for demonstration; in a real app, could log to a table
     IF v_total_share < 90 THEN
+        -- Use DBMS_OUTPUT instead of trying to INSERT, which can cause issues in BEFORE triggers
         DBMS_OUTPUT.PUT_LINE('Warning: Asset ID ' || v_current_asset_id || 
             ' is only allocated at ' || v_total_share || '% of its value');
     END IF;
@@ -352,17 +466,11 @@ EXCEPTION
         RAISE_APPLICATION_ERROR(-20013, 
             'Asset ID ' || v_current_asset_id || ' is not associated with a valid will');
     WHEN OTHERS THEN
-        -- Log the error for troubleshooting
-        INSERT INTO audit_log (
-            user_name, action, action_table, record_id, 
-            old_values, new_values, status
-        ) VALUES (
-            SYS_CONTEXT('USERENV', 'SESSION_USER'),
-            'INSERT/UPDATE', 'WILL_ASSET_BENEFICIARIES', NVL(:NEW.mapping_id, -1),
-            'Error in share percentage validation', SQLERRM, 'ERROR'
-        );
-        -- Re-raise to prevent the operation
-        RAISE;
+        -- For BEFORE triggers, it's best to avoid INSERTs as these can cause recursive issues
+        -- Just raise the error with some context
+        RAISE_APPLICATION_ERROR(-20099, 
+            'Error in share percentage validation for asset ' || 
+            v_current_asset_id || ': ' || SQLERRM);
 END;
 /
 -- Ensures all assets are fully allocated (100%) before a will can be executed
