@@ -32,8 +32,18 @@
                             </div>
                         </div>
                     </div>
-                    
+
+                    <!-- NEW PASSWORD FIELD -->
                     <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                <input type="password" class="form-control" id="password" name="password"
+                                       placeholder="Enter a password" required>
+                            </div>
+                        </div>
+                        
                         <div class="col-md-6 mb-3">
                             <label for="phone" class="form-label">Phone Number <span class="text-danger">*</span></label>
                             <div class="input-group">
@@ -42,7 +52,9 @@
                                        placeholder="+250 XXX XXX XXX" required>
                             </div>
                         </div>
-                        
+                    </div>
+                    
+                    <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="dob" class="form-label">Date of Birth <span class="text-danger">*</span></label>
                             <div class="input-group">
@@ -50,14 +62,14 @@
                                 <input type="date" class="form-control" id="dob" name="dob" required>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="address" class="form-label">Address <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
-                            <textarea class="form-control" id="address" name="address" rows="2" 
-                                      placeholder="Enter your full address" required></textarea>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="address" class="form-label">Address <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                                <textarea class="form-control" id="address" name="address" rows="2" 
+                                          placeholder="Enter your full address" required></textarea>
+                            </div>
                         </div>
                     </div>
                     
@@ -144,88 +156,58 @@ const roleDescriptions = {
     'beneficiary': 'As a Beneficiary, you can view assets assigned to you, track transfer status, and access relevant documents.'
 };
 
-// Show role description
 document.getElementById('role').addEventListener('change', function() {
-    const description = roleDescriptions[this.value] || '';
-    document.getElementById('roleDescription').innerHTML = description;
+    document.getElementById('roleDescription').innerHTML =
+        roleDescriptions[this.value] || '';
 });
 
-// Phone number formatting
 document.getElementById('phone').addEventListener('input', function(e) {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.startsWith('250')) {
-        value = value.substring(0, 12); // Limit to Rwanda phone number length
-    }
-    e.target.value = value;
+    let v = e.target.value.replace(/\D/g, '');
+    if (v.startsWith('250')) v = v.slice(0,12);
+    e.target.value = v;
 });
 
-// Form validation
 document.getElementById('registerForm').addEventListener('submit', function(e) {
     const fullName = document.getElementById('full_name').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const phone = document.getElementById('phone').value.trim();
-    const dob = document.getElementById('dob').value;
-    const address = document.getElementById('address').value.trim();
-    const role = document.getElementById('role').value;
-    const terms = document.getElementById('terms').checked;
-    
-    // Validate full name
-    if (fullName.length < 3) {
-        e.preventDefault();
-        alert('Please enter a valid full name (at least 3 characters)');
-        return false;
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value.trim();
+    const phone    = document.getElementById('phone').value.trim();
+    const dob      = document.getElementById('dob').value;
+    const address  = document.getElementById('address').value.trim();
+    const role     = document.getElementById('role').value;
+    const terms    = document.getElementById('terms').checked;
+
+    if (!fullName || fullName.length < 3) {
+        alert('Enter a valid full name (min 3 chars)');
+        e.preventDefault(); return;
     }
-    
-    // Validate email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        e.preventDefault();
-        alert('Please enter a valid email address');
-        return false;
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRe.test(email)) {
+        alert('Enter a valid email'); e.preventDefault(); return;
     }
-    
-    // Validate phone (Rwanda format)
-    const phoneRegex = /^(\+?250|0)?[7][2-9]\d{7}$/;
-    if (!phoneRegex.test(phone.replace(/\D/g, ''))) {
-        e.preventDefault();
-        alert('Please enter a valid Rwanda phone number');
-        return false;
+    if (!password) {
+        alert('Password is required'); e.preventDefault(); return;
     }
-    
-    // Validate age (must be 18+)
-    const birthDate = new Date(dob);
-    const today = new Date();
-    const age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
+    const phoneRe = /^(\+?250|0)?[7][2-9]\d{7}$/;
+    if (!phoneRe.test(phone)) {
+        alert('Enter a valid Rwanda phone'); e.preventDefault(); return;
     }
-    
+    const bd   = new Date(dob), now = new Date();
+    let age = now.getFullYear() - bd.getFullYear();
+    const mDiff = now.getMonth() - bd.getMonth();
+    if (mDiff < 0 || (mDiff === 0 && now.getDate() < bd.getDate())) age--;
     if (age < 18) {
-        e.preventDefault();
-        alert('You must be at least 18 years old to register');
-        return false;
+        alert('You must be 18+'); e.preventDefault(); return;
     }
-    
-    // Validate other fields
     if (!address || address.length < 10) {
-        e.preventDefault();
-        alert('Please enter a complete address');
-        return false;
+        alert('Enter a complete address'); e.preventDefault(); return;
     }
-    
     if (!role) {
-        e.preventDefault();
-        alert('Please select an account type');
-        return false;
+        alert('Select an account type'); e.preventDefault(); return;
     }
-    
     if (!terms) {
-        e.preventDefault();
-        alert('You must agree to the terms and conditions');
-        return false;
+        alert('You must agree to terms'); e.preventDefault(); return;
     }
 });
 </script>
- {% endblock %}
+{% endblock %}

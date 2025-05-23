@@ -31,4 +31,43 @@ SELECT COUNT(*) FROM JAPHET_DB.executors WHERE will_id = 999;
 
 SELECT * FROM JAPHET_DB.executors WHERE will_id = 999;
 
+ALTER TABLE users
+ADD ( password_hash VARCHAR2(200) );
+ALTER TABLE users
+  ADD (role VARCHAR2(20)
+  );
+
+
+ALTER TABLE wills
+  MODIFY (
+    status VARCHAR2(20) DEFAULT 'Draft' NOT NULL
+  );
+
+
+  ALTER TABLE audit_log
+  RENAME COLUMN "timestamp" TO event_time;
+
+  ALTER TABLE transfer_logs
+  ADD CONSTRAINT chk_transfer_status
+    CHECK (transfer_status IN ('Initiated','Completed','Failed'));
+
+    ALTER TABLE documents
+  ADD CONSTRAINT chk_doc_entity
+    CHECK (related_entity IN ('WILL','ASSET'));
+
+    ALTER TABLE holidays
+  MODIFY is_recurring CHAR(1) DEFAULT 'N' NOT NULL;
+
+  CREATE INDEX idx_assets_will_id         ON assets(will_id);
+CREATE INDEX idx_executors_will_id      ON executors(will_id);
+CREATE INDEX idx_wab_asset_benef        ON will_asset_beneficiaries(asset_id);
+CREATE INDEX idx_transfer_logs_asset    ON transfer_logs(asset_id);
+
+SELECT column_name
+FROM   user_tab_columns
+WHERE  table_name = 'AUDIT_LOG';
+
+ALTER TABLE audit_log
+  RENAME COLUMN "TIMESTAMP" TO event_time;
+
 COMMIT;
