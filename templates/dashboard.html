@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Digital Will Management System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Welcome, {{ session.user_name }}!</h1>
+        <p class="lead">Role: <span class="badge bg-primary">{{ session.user_role|title }}</span></p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    {% if role == 'testator' %}
+        <div class="col-md-3 mb-3">
+            <div class="stat-card">
+                <h3>{{ stats.get('total_wills', 0) }}</h3>
+                <p>Total Wills</p>
+                <i class="fas fa-scroll fa-2x opacity-25 position-absolute top-0 end-0 p-3"></i>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%);">
+                <h3>{{ stats.get('total_assets', 0) }}</h3>
+                <p>Total Assets</p>
+                <i class="fas fa-coins fa-2x opacity-25 position-absolute top-0 end-0 p-3"></i>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                <h3>{{ stats.get('pending_wills', 0) }}</h3>
+                <p>Pending Approval</p>
+                <i class="fas fa-clock fa-2x opacity-25 position-absolute top-0 end-0 p-3"></i>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #f39c12 0%, #d68910 100%);">
+                <h3>{{ stats.get('total_beneficiaries', 0) }}</h3>
+                <p>Beneficiaries</p>
+                <i class="fas fa-users fa-2x opacity-25 position-absolute top-0 end-0 p-3"></i>
+            </div>
+        </div>
+    {% elif role == 'executor' %}
+        <div class="col-md-4 mb-3">
+            <div class="stat-card">
+                <h3>{{ stats.get('assigned_wills', 0) }}</h3>
+                <p>Assigned Wills</p>
+                <i class="fas fa-tasks fa-2x opacity-25 position-absolute top-0 end-0 p-3"></i>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%);">
+                <h3>{{ stats.get('pending_transfers', 0) }}</h3>
+                <p>Pending Transfers</p>
+                <i class="fas fa-exchange-alt fa-2x opacity-25 position-absolute top-0 end-0 p-3"></i>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                <h3>{{ stats.get('completed_transfers', 0) }}</h3>
+                <p>Completed Transfers</p>
+                <i class="fas fa-check-circle fa-2x opacity-25 position-absolute top-0 end-0 p-3"></i>
+            </div>
+        </div>
+    {% elif role == 'beneficiary' %}
+        <div class="col-md-6 mb-3">
+            <div class="stat-card">
+                <h3>{{ stats.get('assigned_assets', 0) }}</h3>
+                <p>Assigned Assets</p>
+                <i class="fas fa-gift fa-2x opacity-25 position-absolute top-0 end-0 p-3"></i>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #27ae60 0%, #229954 100%);">
+                <h3>${{ stats.get('total_value', 0)|round(2) }}</h3>
+                <p>Total Value</p>
+                <i class="fas fa-dollar-sign fa-2x opacity-25 position-absolute top-0 end-0 p-3"></i>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if role == 'testator' %}
+                        <div class="col-md-6 mb-3">
+                            <a href="{{ url_for('create_will') }}" class="btn btn-primary w-100">
+                                <i class="fas fa-plus-circle"></i> Create New Will
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{{ url_for('list_wills') }}" class="btn btn-outline-primary w-100">
+                                <i class="fas fa-list"></i> View My Wills
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{{ url_for('manage_beneficiaries') }}" class="btn btn-success w-100">
+                                <i class="fas fa-user-plus"></i> Add Beneficiary
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="#" class="btn btn-outline-success w-100">
+                                <i class="fas fa-file-upload"></i> Upload Document
+                            </a>
+                        </div>
+                    {% elif role == 'executor' %}
+                        <div class="col-md-6 mb-3">
+                            <a href="{{ url_for('list_wills') }}" class="btn btn-primary w-100">
+                                <i class="fas fa-tasks"></i> View Assigned Wills
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="{{ url_for('list_transfers') }}" class="btn btn-success w-100">
+                                <i class="fas fa-exchange-alt"></i> Manage Transfers
+                            </a>
+                        </div>
+                    {% elif role == 'beneficiary' %}
+                        <div class="col-md-6 mb-3">
+                            <a href="#" class="btn btn-primary w-100">
+                                <i class="fas fa-gift"></i> View My Assets
+                            </a>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <a href="#" class="btn btn-success w-100">
+                                <i class="fas fa-file-download"></i> Download Documents
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-history"></i> Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <tbody>
+                            <tr>
+                                <td><i class="fas fa-check-circle text-success"></i> Will "Family Property Distribution" approved</td>
+                                <td class="text-end text-muted">2 hours ago</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-plus-circle text-primary"></i> New asset "Family House" added</td>
+                                <td class="text-end text-muted">Yesterday</td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-user-plus text-info"></i> Beneficiary "John Doe" assigned to asset</td>
+                                <td class="text-end text-muted">3 days ago</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Side Panel -->
+    <div class="col-lg-4">
+        <!-- Notifications -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-bell"></i> Notifications</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info mb-2">
+                    <small><i class="fas fa-info-circle"></i> Remember to complete asset allocation for "Business Assets"</small>
+                </div>
+                <div class="alert alert-warning mb-2">
+                    <small><i class="fas fa-exclamation-triangle"></i> Will "Family Trust" requires executor assignment</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Help & Resources -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-question-circle"></i> Help & Resources</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <a href="#" class="text-decoration-none">
+                            <i class="fas fa-book"></i> User Guide
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#" class="text-decoration-none">
+                            <i class="fas fa-video"></i> Video Tutorials
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#" class="text-decoration-none">
+                            <i class="fas fa-gavel"></i> Legal Information
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="text-decoration-none">
+                            <i class="fas fa-headset"></i> Contact Support
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's Date Info (for transfer restrictions) -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> 
+            <strong>System Information:</strong> Today is {{ moment().format('dddd, MMMM D, YYYY') }}. 
+            {% if moment().format('dddd') in ['Saturday', 'Sunday'] %}
+                <span class="text-danger">Asset transfers are not allowed on weekends.</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

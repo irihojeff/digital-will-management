@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Transfers - Digital Will Management System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Asset Transfers</h1>
+        <p class="text-muted">Manage and track asset transfers to beneficiaries</p>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#initiateTransferModal">
+            <i class="fas fa-exchange-alt"></i> Initiate Transfer
+        </button>
+    </div>
+</div>
+
+<!-- Transfer Restrictions Alert -->
+<div class="alert alert-warning alert-dismissible fade show" role="alert">
+    <i class="fas fa-exclamation-triangle"></i>
+    <strong>Transfer Restrictions:</strong> Asset transfers are not allowed on weekends (Saturday/Sunday) or public holidays.
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+
+<!-- Transfers Table -->
+<div class="card">
+    <div class="card-header">
+        <ul class="nav nav-tabs card-header-tabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#pending">
+                    Pending <span class="badge bg-warning text-dark">{{ transfers|selectattr('4', 'equalto', 'Initiated')|list|length }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#completed">
+                    Completed <span class="badge bg-success">{{ transfers|selectattr('4', 'equalto', 'Completed')|list|length }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#all">
+                    All Transfers <span class="badge bg-secondary">{{ transfers|length }}</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body">
+        <div class="tab-content">
+            <!-- Pending Transfers -->
+            <div class="tab-pane fade show active" id="pending">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Asset</th>
+                                <th>Beneficiary</th>
+                                <th>Transfer Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transfer in transfers if transfer[4] == 'Initiated' %}
+                            <tr>
+                                <td>{{ transfer[1] }}</td>
+                                <td>{{ transfer[2] }}</td>
+                                <td>{{ transfer[3].strftime('%b %d, %Y') if transfer[3] else 'N/A' }}</td>
+                                <td><span class="badge bg-warning text-dark">{{ transfer[4] }}</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-success" onclick="completeTransfer({{ transfer[0] }})">
+                                        <i class="fas fa-check"></i> Complete
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="cancelTransfer({{ transfer[0] }})">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">No pending transfers</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Completed Transfers -->
+            <div class="tab-pane fade" id="completed">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Asset</th>
+                                <th>Beneficiary</th>
+                                <th>Transfer Date</th>
+                                <th>Approved By</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transfer in transfers if transfer[4] == 'Completed' %}
+                            <tr>
+                                <td>{{ transfer[1] }}</td>
+                                <td>{{ transfer[2] }}</td>
+                                <td>{{ transfer[3].strftime('%b %d, %Y') if transfer[3] else 'N/A' }}</td>
+                                <td>{{ transfer[5] if transfer[5] else 'System' }}</td>
+                                <td><span class="badge bg-success">{{ transfer[4] }}</span></td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">No completed transfers</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- All Transfers -->
+            <div class="tab-pane fade" id="all">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Asset</th>
+                                <th>Beneficiary</th>
+                                <th>Transfer Date</th>
+                                <th>Status</th>
+                                <th>Approved By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transfer in transfers %}
+                            <tr>
+                                <td>{{ transfer[1] }}</td>
+                                <td>{{ transfer[2] }}</td>
+                                <td>{{ transfer[3].strftime('%b %d, %Y') if transfer[3] else 'N/A' }}</td>
+                                <td>
+                                    {% if transfer[4] == 'Initiated' %}
+                                        <span class="badge bg-warning text-dark">{{ transfer[4] }}</span>
+                                    {% elif transfer[4] == 'Completed' %}
+                                        <span class="badge bg-success">{{ transfer[4] }}</span>
+                                    {% elif transfer[4] == 'Cancelled' %}
+                                        <span class="badge bg-danger">{{ transfer[4] }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ transfer[4] }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ transfer[5] if transfer[5] else '-' }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">No transfers found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Initiate Transfer Modal -->
+<div class="modal fade" id="initiateTransferModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Initiate Asset Transfer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('initiate_transfer') }}" id="initiateTransferForm">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        Only assets from approved or executing wills with assigned beneficiaries can be transferred.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="will_select" class="form-label">Select Will</label>
+                        <select class="form-select" id="will_select" required>
+                            <option value="">Choose a will...</option>
+                            <!-- Options will be populated dynamically -->
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="asset_id" class="form-label">Select Asset</label>
+                        <select class="form-select" id="asset_id" name="asset_id" required disabled>
+                            <option value="">First select a will...</option>
+                        </select>
+                    </div>

@@ -49,3 +49,10 @@ VALUES ('WILL', 1, 'Scanned Will Document', 'Signed copy of the family property 
 -- HOLIDAYS
 INSERT INTO holidays (holiday_date, description, is_recurring)
 VALUES (TO_DATE('2025-07-01', 'YYYY-MM-DD'), 'Independence Day', 'Y');
+
+
+INSERT INTO wills (will_id, user_id, title, status)
+VALUES (999, 1, 'Test Will for Approval', 'Draft');
+
+INSERT INTO executors (executor_id, will_id, full_name, email, is_primary)
+VALUES (999, 999, 'Executor Test', 'exec@test.com', 'Y');

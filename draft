@@ -1,0 +1,193 @@
+# Digital Will Management System - Complete Project Structure
+
+## Project Directory Structure
+```
+digital_will_management/
+├── app.py                      # Main Flask application
+├── config.py                   # Configuration file
+├── requirements.txt            # Python dependencies
+├── database/
+│   ├── __init__.py
+│   ├── connection.py          # Oracle DB connection
+│   └── models.py              # Database models
+├── routes/
+│   ├── __init__.py
+│   ├── auth.py               # Authentication routes
+│   ├── wills.py              # Will management routes
+│   ├── assets.py             # Asset management routes
+│   ├── beneficiaries.py      # Beneficiary routes
+│   ├── executors.py          # Executor routes
+│   └── admin.py              # Admin routes
+├── templates/
+│   ├── base.html             # Base template
+│   ├── index.html            # Landing page
+│   ├── login.html            # Login page
+│   ├── register.html         # Registration page
+│   ├── dashboard.html        # User dashboard
+│   ├── wills/
+│   │   ├── create.html       # Create will
+│   │   ├── view.html         # View will
+│   │   ├── edit.html         # Edit will
+│   │   └── list.html         # List wills
+│   ├── assets/
+│   │   ├── add.html          # Add asset
+│   │   ├── list.html         # List assets
+│   │   └── assign.html       # Assign beneficiaries
+│   ├── beneficiaries/
+│   │   ├── add.html          # Add beneficiary
+│   │   └── list.html         # List beneficiaries
+│   └── admin/   
+│       ├── dashboard.html    # Admin dashboard
+│       └── transfers.html    # Transfer management
+├── static/
+│   ├── css/
+│   │   ├── style.css         # Main stylesheet
+│   │   └── dashboard.css     # Dashboard styles
+│   └── js/
+│       ├── main.js           # Main JavaScript
+│       └── validation.js     # Form validation
+└── utils/
+    ├── __init__.py
+    ├── decorators.py         # Authentication decorators
+    └── helpers.py            # Helper functions
+```
+
+## Installation Instructions
+
+1. **Install Python Dependencies**
+```bash
+pip install -r requirements.txt
+```
+
+2. **Install Oracle Instant Client**
+   - Download from Oracle website
+   - Set environment variables
+
+3. **Configure Database Connection**
+   - Update config.py with your Oracle credentials
+
+4. **Run the Application**
+```bash
+python app.py
+```
+
+## User Roles and Features
+
+### 1. **Testator (Will Creator)**
+- Create and manage wills
+- Add and manage assets
+- Assign beneficiaries to assets
+- Upload documents
+- Track will status
+
+### 2. **Executor**
+- View assigned wills
+- Manage asset transfers
+- Update transfer status
+- View beneficiary information
+
+### 3. **Beneficiary**
+- View assigned assets
+- Track transfer status
+- Download related documents
+
+### 4. **Administrator**
+- Manage all wills
+- Override restrictions
+- Generate reports
+- Manage holidays
+- View audit logs
+
+## Key Features Implemented
+
+1. **Authentication System**
+   - User registration with role selection
+   - Secure login/logout
+   - Session management
+   - Password hashing
+
+2. **Will Management**
+   - Create, edit, delete (draft only)
+   - Status workflow (Draft → Approved → Executing → Executed)
+   - Document attachment
+   - Executor assignment
+
+3. **Asset Management**
+   - Add various asset types
+   - Asset valuation
+   - Location tracking
+   - Beneficiary assignment with share percentages
+
+4. **Transfer System**
+   - Weekend/holiday restrictions
+   - Audit logging
+   - Status tracking
+   - Approval workflow
+
+5. **Security Features**
+   - Role-based access control
+   - Input validation
+   - SQL injection prevention
+   - XSS protection
+   - CSRF tokens
+
+## Database Integration
+
+The system integrates with your Oracle database schema:
+- Uses stored procedures for critical operations
+- Implements triggers for business rules
+- Maintains audit trails
+- Handles complex transactions
+
+## Business Rules Enforced
+
+1. No transfers on weekends or holidays
+2. Assets must be 100% allocated before execution
+3. At least one executor required for approval
+4. Only one primary executor per will
+5. Cannot modify executed wills
+6. Draft wills can be deleted, others cannot
+
+## API Endpoints
+
+### Authentication
+- POST /api/register
+- POST /api/login
+- GET /api/logout
+
+### Wills
+- GET /api/wills
+- POST /api/wills
+- PUT /api/wills/{id}
+- DELETE /api/wills/{id}
+
+### Assets
+- GET /api/assets
+- POST /api/assets
+- PUT /api/assets/{id}
+- POST /api/assets/{id}/assign
+
+### Transfers
+- GET /api/transfers
+- POST /api/transfers
+- PUT /api/transfers/{id}/status
+
+## Testing the Application
+
+1. **Create Test Users**
+   - Testator: john@example.com
+   - Executor: executor@example.com
+   - Admin: admin@example.com
+
+2. **Test Workflow**
+   - Login as testator
+   - Create a will
+   - Add assets
+   - Assign beneficiaries
+   - Submit for approval
+   
+3. **Test Restrictions**
+   - Try transfers on weekends
+   - Test share percentage limits
+   - Verify status transitions
+

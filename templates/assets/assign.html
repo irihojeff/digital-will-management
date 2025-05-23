@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Assign Beneficiaries - Digital Will Management System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-user-plus"></i> Assign Beneficiaries to Asset</h4>
+            </div>
+            <div class="card-body">
+                <!-- Asset Information -->
+                <div class="alert alert-info">
+                    <h5><i class="fas fa-coins"></i> Asset Details</h5>
+                    <p class="mb-1"><strong>Name:</strong> {{ asset[0] if asset else "N/A" }}</p>
+                    <p class="mb-1"><strong>Description:</strong> {{ asset[1] if asset else "N/A" }}</p>
+                    <p class="mb-0"><strong>Value:</strong> ₹{{ "{:,.2f}".format(asset[2]) if asset and asset[2] else "N/A" }}</p>
+                </div>
+                
+                <!-- Current Allocations -->
+                {% if current_allocations %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Current Allocations</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Beneficiary</th>
+                                        <th>Share %</th>
+                                        <th>Conditions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% set total_allocated = 0 %}
+                                    {% for allocation in current_allocations %}
+                                    <tr>
+                                        <td>{{ allocation[0] }}</td>
+                                        <td>{{ allocation[1] }}%</td>
+                                        <td>{{ allocation[2] if allocation[2] else "None" }}</td>
+                                    </tr>
+                                    {% set total_allocated = total_allocated + allocation[1] %}
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th>Total Allocated</th>
+                                        <th>{{ total_allocated }}%</th>
+                                        <th>Remaining: {{ 100 - total_allocated }}%</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Assignment Form -->
+                <form method="POST" action="{{ url_for('assign_asset', asset_id=asset_id) }}" id="assignForm">
+                    <div class="mb-3">
+                        <label for="beneficiary_id" class="form-label">Select Beneficiary <span class="text-danger">*</span></label>
+                        <select class="form-select" id="beneficiary_id" name="beneficiary_id" required>
+                            <option value="">Choose a beneficiary...</option>
+                            {% for beneficiary in beneficiaries %}
+                            <option value="{{ beneficiary[0] }}">
+                                {{ beneficiary[1] }} ({{ beneficiary[2] }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="share_percent" class="form-label">Share Percentage <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="share_percent" name="share_percent" 
+                                   min="0.01" max="100" step="0.01" required>
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <small class="text-muted">
+                            {% if current_allocations %}
+                                Maximum available: {{ 100 - total_allocated }}%
+                            {% else %}
+                                Enter percentage between 0.01 and 100
+                            {% endif %}
+                        </small>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="conditions" class="form-label">Conditions (Optional)</label>
+                        <textarea class="form-control" id="conditions" name="conditions" rows="3" 
+                                  placeholder="e.g., Upon reaching age 25, For education purposes only"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-6">
+                            <a href="{{ request.referrer or url_for('dashboard') }}" class="btn btn-secondary w-100">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-save"></i> Assign Beneficiary
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Help Card -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Assignment Guidelines</h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Total share allocation for an asset cannot exceed 100%</li>
+                    <li>All assets must be 100% allocated before will execution</li>
+                    <li>You can assign multiple beneficiaries to a single asset</li>
+                    <li>Conditions are optional but can help clarify distribution terms</li>
+                    <li>Consider tax implications when assigning high-value assets</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Get the maximum available percentage
+const maxAvailable = {{ 100 - (total_allocated if current_allocations else 0) }};
+
+// Update max attribute on share input
+document.getElementById('share_percent').setAttribute('max', maxAvailable);
+
+// Form validation
+document.getElementById('assignForm').addEventListener('submit', function(e) {
+    const beneficiary = document.getElementById('beneficiary_id').value;
+    const sharePercent = parseFloat(document.getElementById('share_percent').value);
+    
+    if (!beneficiary) {
+        e.preventDefault();
+        alert('Please select a beneficiary');
+        return false;
+    }
+    
+    if (isNaN(sharePercent) || sharePercent <= 0) {
+        e.preventDefault();
+        alert('Please enter a valid share percentage');
+        return false;
+    }
+    
+    if (sharePercent > maxAvailable) {
+        e.preventDefault();
+        alert(`Share percentage cannot exceed ${maxAvailable}% (remaining allocation)`);
+        return false;
+    }
+});
+
+// Real-time validation feedback
+document.getElementById('share_percent').addEventListener('input', function() {
+    const value = parseFloat(this.value);
+    if (value > maxAvailable) {
+        this.classList.add('is-invalid');
+        this.setCustomValidity(`Cannot exceed ${maxAvailable}%`);
+    } else {
+        this.classList.remove('is-invalid');
+        this.setCustomValidity('');
+    }
+});
+</script>
+{% endblock %}

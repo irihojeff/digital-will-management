@@ -195,12 +195,12 @@ BEGIN
     WHERE will_id = p_will_id;
     
     IF v_will_exists = 0 THEN
-        RAISE_APPLICATION_ERROR(-22001, 'Will ID ' || p_will_id || ' does not exist.');
+        RAISE_APPLICATION_ERROR(-20091, 'Will ID ' || p_will_id || ' does not exist.');
     END IF;
     
     -- Only allow if current status is Draft
     IF v_old_status != 'Draft' THEN
-        RAISE_APPLICATION_ERROR(-22002, 'Only Draft wills can be approved. Current status: ' || v_old_status);
+        RAISE_APPLICATION_ERROR(-20092, 'Only Draft wills can be approved. Current status: ' || v_old_status);
     END IF;
     
     -- Check for at least one executor
@@ -209,7 +209,7 @@ BEGIN
     WHERE will_id = p_will_id;
     
     IF v_executor_count = 0 THEN
-        RAISE_APPLICATION_ERROR(-22003, 'Cannot approve will without at least one executor.');
+        RAISE_APPLICATION_ERROR(-20093, 'Cannot approve will without at least one executor.');
     END IF;
     
     -- Check for primary executor
@@ -218,21 +218,21 @@ BEGIN
     WHERE will_id = p_will_id AND is_primary = 'Y';
     
     IF v_primary_count = 0 THEN
-        RAISE_APPLICATION_ERROR(-22004, 'Cannot approve will without a primary executor.');
+        RAISE_APPLICATION_ERROR(-20094, 'Cannot approve will without a primary executor.');
     END IF;
     
     -- Check if all assets are fully allocated (or close to it)
     SELECT COUNT(*) INTO v_incomplete_assets
     FROM assets a
     WHERE a.will_id = p_will_id
-    AND 90 > (  -- Using 90% as threshold, adjust as needed
+    AND 90 > (
         SELECT NVL(SUM(share_percent), 0)
         FROM will_asset_beneficiaries
         WHERE asset_id = a.asset_id
     );
     
     IF v_incomplete_assets > 0 THEN
-        RAISE_APPLICATION_ERROR(-22005, 
+        RAISE_APPLICATION_ERROR(-20095, 
             v_incomplete_assets || ' assets have less than 90% allocation. Please review asset allocations before approval.');
     END IF;
     
@@ -285,7 +285,6 @@ EXCEPTION
         RAISE;
 END;
 /
-
 
 
 

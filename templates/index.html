@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome - Digital Will Management System{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section text-center py-5">
+    <div class="row align-items-center">
+        <div class="col-lg-6">
+            <h1 class="display-4 fw-bold mb-4">Secure Your Legacy Digitally</h1>
+            <p class="lead mb-4">
+                Create, manage, and execute your will with our comprehensive digital platform. 
+                Ensure your assets are distributed according to your wishes with complete transparency and security.
+            </p>
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                {% if not session.user_id %}
+                    <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4">Get Started</a>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-secondary btn-lg px-4">Login</a>
+                {% else %}
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4">Go to Dashboard</a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <img src="https://via.placeholder.com/600x400/3498db/ffffff?text=Digital+Will+Management" 
+                 class="img-fluid rounded shadow" alt="Digital Will Management">
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section py-5 mt-5">
+    <h2 class="text-center mb-5">Why Choose Our Platform?</h2>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 text-center p-4">
+                <div class="card-body">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-shield-alt fa-3x text-primary"></i>
+                    </div>
+                    <h4 class="card-title">Secure & Legal</h4>
+                    <p class="card-text">
+                        Your will is created following legal standards with bank-level security 
+                        and encryption to protect your sensitive information.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 text-center p-4">
+                <div class="card-body">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-users fa-3x text-success"></i>
+                    </div>
+                    <h4 class="card-title">Easy Management</h4>
+                    <p class="card-text">
+                        Manage beneficiaries, assets, and executors all in one place. 
+                        Update your will anytime with complete version control.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 text-center p-4">
+                <div class="card-body">
+                    <div class="feature-icon mb-3">
+                        <i class="fas fa-chart-line fa-3x text-info"></i>
+                    </div>
+                    <h4 class="card-title">Asset Tracking</h4>
+                    <p class="card-text">
+                        Track all your assets including real estate, financial accounts, 
+                        and personal property with detailed valuation and allocation.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works Section -->
+<section class="how-it-works py-5 mt-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-5">How It Works</h2>
+        <div class="row">
+            <div class="col-md-3 text-center mb-4">
+                <div class="step-number rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 60px; height: 60px; font-size: 1.5rem; font-weight: bold;">1</div>
+                <h5>Create Account</h5>
+                <p>Register as a testator, executor, or beneficiary to get started</p>
+            </div>
+            <div class="col-md-3 text-center mb-4">
+                <div class="step-number rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 60px; height: 60px; font-size: 1.5rem; font-weight: bold;">2</div>
+                <h5>Draft Your Will</h5>
+                <p>Create your will and add all your assets with detailed information</p>
+            </div>
+            <div class="col-md-3 text-center mb-4">
+                <div class="step-number rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 60px; height: 60px; font-size: 1.5rem; font-weight: bold;">3</div>
+                <h5>Assign Beneficiaries</h5>
+                <p>Allocate your assets to beneficiaries with specific percentages</p>
+            </div>
+            <div class="col-md-3 text-center mb-4">
+                <div class="step-number rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 60px; height: 60px; font-size: 1.5rem; font-weight: bold;">4</div>
+                <h5>Execute Will</h5>
+                <p>Approve and execute your will with designated executors</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- User Types Section -->
+<section class="user-types py-5 mt-5">
+    <h2 class="text-center mb-5">Choose Your Role</h2>
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card h-100 border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-user-edit"></i> Testator</h4>
+                </div>
+                <div class="card-body">
+                    <p>Create and manage your digital will:</p>
+                    <ul>
+                        <li>Draft multiple wills</li>
+                        <li>Add and manage assets</li>
+                        <li>Assign beneficiaries</li>
+                        <li>Appoint executors</li>
+                        <li>Upload supporting documents</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100 border-success">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-user-tie"></i> Executor</h4>
+                </div>
+                <div class="card-body">
+                    <p>Manage will execution:</p>
+                    <ul>
+                        <li>View assigned wills</li>
+                        <li>Manage asset transfers</li>
+                        <li>Track execution progress</li>
+                        <li>Communicate with beneficiaries</li>
+                        <li>Generate reports</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100 border-info">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0"><i class="fas fa-user-friends"></i> Beneficiary</h4>
+                </div>
+                <div class="card-body">
+                    <p>Track your inheritance:</p>
+                    <ul>
+                        <li>View assigned assets</li>
+                        <li>Track transfer status</li>
+                        <li>Download documents</li>
+                        <li>Communicate with executors</li>
+                        <li>View will details</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Statistics Section -->
+<section class="statistics py-5 mt-5 bg-light">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-3 mb-3">
+                <h3 class="display-4 text-primary">1000+</h3>
+                <p class="lead">Registered Users</p>
+            </div>
+            <div class="col-md-3 mb-3">
+                <h3 class="display-4 text-success">500+</h3>
+                <p class="lead">Active Wills</p>
+            </div>
+            <div class="col-md-3 mb-3">
+                <h3 class="display-4 text-info">₹50M+</h3>
+                <p class="lead">Assets Managed</p>
+            </div>
+            <div class="col-md-3 mb-3">
+                <h3 class="display-4 text-warning">99.9%</h3>
+                <p class="lead">Uptime</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section text-center py-5 mt-5">
+    <h2 class="mb-4">Ready to Secure Your Legacy?</h2>
+    <p class="lead mb-4">Join thousands who trust us with their digital will management</p>
+    {% if not session.user_id %}
+        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">Create Your Account</a>
+    {% endif %}
+</section>
+{% endblock %}

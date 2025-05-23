@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Digital Will Management System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-5 col-md-7">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0 text-center">
+                    <i class="fas fa-sign-in-alt"></i> Login to Your Account
+                </h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('login') }}" id="loginForm">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email Address</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   placeholder="Enter your email" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                            <input type="password" class="form-control" id="password" name="password" 
+                                   placeholder="Enter your password" required>
+                            <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="role" class="form-label">Login As</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-user-tag"></i></span>
+                            <select class="form-select" id="role" name="role" required>
+                                <option value="">Select your role...</option>
+                                <option value="testator">Testator (Will Creator)</option>
+                                <option value="executor">Executor</option>
+                                <option value="beneficiary">Beneficiary</option>
+                                <option value="admin">Administrator</option>
+                            </select>
+                        </div>
+                        <small class="text-muted">Select the role that matches your account type</small>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="rememberMe" name="remember">
+                        <label class="form-check-label" for="rememberMe">
+                            Remember me
+                        </label>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </button>
+                    </div>
+                </form>
+                
+                <hr class="my-4">
+                
+                <div class="text-center">
+                    <p class="mb-2">Don't have an account?</p>
+                    <a href="{{ url_for('register') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-user-plus"></i> Create Account
+                    </a>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <a href="#" class="text-decoration-none">Forgot Password?</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Demo Credentials Card -->
+        <div class="card mt-4 border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Demo Credentials</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-2"><strong>Testator:</strong></p>
+                <ul class="mb-3">
+                    <li>Email: jean.claude@example.rw</li>
+                    <li>Password: demo123</li>
+                </ul>
+                
+                <p class="mb-2"><strong>Executor:</strong></p>
+                <ul class="mb-3">
+                    <li>Email: solange.mukamana@lawfirm.rw</li>
+                    <li>Password: demo123</li>
+                </ul>
+                
+                <p class="mb-2"><strong>Beneficiary:</strong></p>
+                <ul class="mb-0">
+                    <li>Email: eric.munyaneza@example.rw</li>
+                    <li>Password: demo123</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Toggle password visibility
+document.getElementById('togglePassword').addEventListener('click', function() {
+    const passwordInput = document.getElementById('password');
+    const icon = this.querySelector('i');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+});
+
+// Form validation
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const role = document.getElementById('role').value;
+    
+    if (!email || !password || !role) {
+        e.preventDefault();
+        alert('Please fill in all fields');
+        return false;
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        e.preventDefault();
+        alert('Please enter a valid email address');
+        return false;
+    }
+});
+</script>
+{% endblock %}

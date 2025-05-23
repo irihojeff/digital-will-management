@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Logs - Digital Will Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3">
+                <i class="fas fa-shield-alt me-2"></i>Audit Logs & Security Monitoring
+            </h1>
+            <div class="btn-group">
+                <button class="btn btn-outline-primary btn-sm" onclick="refreshLogs()">
+                    <i class="fas fa-sync-alt me-2"></i>Refresh
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="exportLogs()">
+                    <i class="fas fa-download me-2"></i>Export
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Statistics -->
+<div class="row mb-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Actions This Week
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if action_stats %}
+                    <canvas id="actionChart" height="200"></canvas>
+                {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-chart-bar fa-2x mb-2"></i>
+                        <p>No activity data available</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-check-circle me-2"></i>Status Distribution
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if status_stats %}
+                    <div class="row">
+                        {% for stat in status_stats %}
+                        <div class="col-6 mb-3">
+                            <div class="text-center">
+                                <div class="h4 mb-1 text-{{ 'success' if stat.STATUS == 'SUCCESS' else 'danger' if stat.STATUS == 'ERROR' else 'secondary' }}">
+                                    {{ stat.COUNT }}
+                                </div>
+                                <div class="small text-muted">{{ stat.STATUS }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <p>No status data available</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Audit Logs Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>Recent Audit Entries
+                    </h5>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="autoRefresh">
+                        <label class="form-check-label" for="autoRefresh">
+                            Auto-refresh
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if logs %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Timestamp</th>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>Table</th>
+                                    <th>Record ID</th>
+                                    <th>Status</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs %}
+                                <tr class="audit-row" data-bs-toggle="tooltip" title="Click for details">
+                                    <td>
+                                        <span class="badge bg-secondary">{{ log.AUDIT_ID }}</span>
+                                    </td>
+                                    <td class="text-nowrap">
+                                        <small>{{ log.TIMESTAMP.strftime('%Y-%m-%d %H:%M:%S') if log.TIMESTAMP else 'N/A' }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ log.USER_NAME }}</span>
+                                    </td>
+                                    <td>
+                                        {% if log.ACTION == 'INSERT' %}
+                                            <i class="fas fa-plus text-success me-1"></i>
+                                        {% elif log.ACTION == 'UPDATE' %}
+                                            <i class="fas fa-edit text-warning me-1"></i>
+                                        {% elif log.ACTION == 'DELETE' %}
+                                            <i class="fas fa-trash text-danger me-1"></i>
+                                        {% else %}
+                                            <i class="fas fa-cog text-info me-1"></i>
+                                        {% endif %}
+                                        {{ log.ACTION }}
+                                    </td>
+                                    <td>
+                                        <code class="small">{{ log.ACTION_TABLE }}</code>
+                                    </td>
+                                    <td>
+                                        {% if log.RECORD_ID %}
+                                            <span class="badge bg-light text-dark">{{ log.RECORD_ID }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if log.STATUS == 'SUCCESS' else 'danger' if log.STATUS == 'ERROR' else 'warning' if log.STATUS == 'WARNING' else 'secondary' }}">
+                                            {{ log.STATUS }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-outline-primary btn-sm" 
+                                                onclick="showLogDetails({{ log.AUDIT_ID }}, '{{ log.OLD_VALUES|replace("'", "\\'") if log.OLD_VALUES else '' }}', '{{ log.NEW_VALUES|replace("'", "\\'") if log.NEW_VALUES else '' }}')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination info -->
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="text-muted">
+                            Showing {{ logs|length }} recent entries
+                        </div>
+                        <div>
+                            <button class="btn btn-outline-primary btn-sm" onclick="loadMoreLogs()">
+                                <i class="fas fa-chevron-down me-2"></i>Load More
+                            </button>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-clipboard-list fa-3x mb-3"></i>
+                        <h5>No Audit Logs Found</h5>
+                        <p>Start using the system to generate audit entries.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Details Modal -->
+<div class="modal fade" id="logDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-info-circle me-2"></i>Audit Log Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="logDetailsContent">
+                    <!-- Content will be populated by JavaScript -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Action Chart
+{% if action_stats %}
+const actionCtx = document.getElementById('actionChart').getContext('2d');
+new Chart(actionCtx, {
+    type: 'bar',
+    data: {
+        labels: [
+            {% for stat in action_stats %}
+                '{{ stat.ACTION }}'{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'Number of Actions',
+            data: [
+                {% for stat in action_stats %}
+                    {{ stat.COUNT }}{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: [
+                '#28a745', // INSERT - Green
+                '#ffc107', // UPDATE - Yellow
+                '#dc3545', // DELETE - Red
+                '#17a2b8'  // OTHER - Blue
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+{% endif %}
+
+function showLogDetails(auditId, oldValues, newValues) {
+    const modal = new bootstrap.Modal(document.getElementById('logDetailsModal'));
+    const content = document.getElementById('logDetailsContent');
+    
+    let oldValuesFormatted = 'No data';
+    let newValuesFormatted = 'No data';
+    
+    try {
+        if (oldValues && oldValues.trim() && oldValues !== 'None') {
+            oldValuesFormatted = oldValues.startsWith('{') ? 
+                `<pre class="bg-light p-2 rounded"><code>${JSON.stringify(JSON.parse(oldValues), null, 2)}</code></pre>` :
+                `<div class="bg-light p-2 rounded">${oldValues}</div>`;
+        }
+    } catch (e) {
+        oldValuesFormatted = `<div class="bg-light p-2 rounded">${oldValues}</div>`;
+    }
+    
+    try {
+        if (newValues && newValues.trim() && newValues !== 'None') {
+            newValuesFormatted = newValues.startsWith('{') ? 
+                `<pre class="bg-light p-2 rounded"><code>${JSON.stringify(JSON.parse(newValues), null, 2)}</code></pre>` :
+                `<div class="bg-light p-2 rounded">${newValues}</div>`;
+        }
+    } catch (e) {
+        newValuesFormatted = `<div class="bg-light p-2 rounded">${newValues}</div>`;
+    }
+    
+    content.innerHTML = `
+        <div class="row">
+            <div class="col-12 mb-3">
+                <h6>Audit ID: <span class="badge bg-primary">${auditId}</span></h6>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-danger">
+                    <i class="fas fa-arrow-left me-2"></i>Old Values
+                </h6>
+                ${oldValuesFormatted}
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-success">
+                    <i class="fas fa-arrow-right me-2"></i>New Values
+                </h6>
+                ${newValuesFormatted}
+            </div>
+        </div>
+    `;
+    
+    modal.show();
+}
+
+function refreshLogs() {
+    window.location.reload();
+}
+
+function exportLogs() {
+    // For demonstration - in a real app, this would generate a downloadable file
+    alert('Export functionality would be implemented here.\n\nThis would generate:\n- CSV export of audit logs\n- Filtered date ranges\n- Different format options');
+}
+
+function loadMoreLogs() {
+    // For demonstration - in a real app, this would load more logs via AJAX
+    alert('Load more functionality would be implemented here.\n\nThis would:\n- Load additional log entries\n- Implement pagination\n- Maintain current filters');
+}
+
+// Auto-refresh functionality
+let autoRefreshInterval;
+document.getElementById('autoRefresh').addEventListener('change', function() {
+    if (this.checked) {
+        autoRefreshInterval = setInterval(refreshLogs, 30000); // Refresh every 30 seconds
+        console.log('Auto-refresh enabled');
+    } else {
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+            console.log('Auto-refresh disabled');
+        }
+    }
+});
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Create Will - Digital Will Management System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-scroll"></i> Create New Will</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('create_will') }}" id="createWillForm">
+                    <div class="mb-4">
+                        <label for="title" class="form-label">Will Title <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="title" name="title" 
+                               placeholder="e.g., Family Property Distribution" required>
+                        <small class="text-muted">Give your will a descriptive title</small>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="description" name="description" rows="4" 
+                                  placeholder="Describe the purpose and scope of this will..." required></textarea>
+                        <small class="text-muted">Provide a detailed description of your will</small>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading"><i class="fas fa-info-circle"></i> Will Creation Process</h6>
+                        <ol class="mb-0">
+                            <li>Create your will (current step)</li>
+                            <li>Add your assets</li>
+                            <li>Assign beneficiaries to each asset</li>
+                            <li>Appoint executors</li>
+                            <li>Submit for approval</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-6">
+                            <a href="{{ url_for('list_wills') }}" class="btn btn-secondary w-100">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-save"></i> Create Will
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Tips Card -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-lightbulb"></i> Tips for Creating Your Will</h5>
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li>Choose a clear, descriptive title that reflects the main purpose of your will</li>
+                    <li>Include all relevant assets: real estate, bank accounts, investments, personal property</li>
+                    <li>Consider all potential beneficiaries: family members, friends, charities</li>
+                    <li>Appoint trusted executors who can manage your estate effectively</li>
+                    <li>Keep your will updated as your circumstances change</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form validation
+document.getElementById('createWillForm').addEventListener('submit', function(e) {
+    const title = document.getElementById('title').value.trim();
+    const description = document.getElementById('description').value.trim();
+    
+    if (title.length < 5) {
+        e.preventDefault();
+        alert('Will title must be at least 5 characters long');
+        return false;
+    }
+    
+    if (description.length < 20) {
+        e.preventDefault();
+        alert('Please provide a more detailed description (at least 20 characters)');
+        return false;
+    }
+});
+</script>
+{% endblock %}

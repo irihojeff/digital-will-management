@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}My Wills - Digital Will Management System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>
+            {% if session.user_role == 'testator' %}
+                My Wills
+            {% elif session.user_role == 'executor' %}
+                Assigned Wills
+            {% else %}
+                All Wills
+            {% endif %}
+        </h1>
+    </div>
+    {% if session.user_role == 'testator' %}
+    <div class="col-auto">
+        <a href="{{ url_for('create_will') }}" class="btn btn-primary">
+            <i class="fas fa-plus-circle"></i> Create New Will
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Wills Table -->
+<div class="card">
+    <div class="card-body">
+        {% if wills %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th>Created Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for will in wills %}
+                    <tr>
+                        <td>
+                            <strong>{{ will[1] }}</strong>
+                        </td>
+                        <td>{{ will[2][:50] }}{% if will[2]|length > 50 %}...{% endif %}</td>
+                        <td>
+                            {% if will[3] == 'Draft' %}
+                                <span class="badge bg-secondary">Draft</span>
+                            {% elif will[3] == 'Approved' %}
+                                <span class="badge bg-primary">Approved</span>
+                            {% elif will[3] == 'Executing' %}
+                                <span class="badge bg-warning text-dark">Executing</span>
+                            {% elif will[3] == 'Executed' %}
+                                <span class="badge bg-success">Executed</span>
+                            {% else %}
+                                <span class="badge bg-info">{{ will[3] }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ will[4].strftime('%b %d, %Y') if will[4] else 'N/A' }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('view_will', will_id=will[0]) }}" 
+                                   class="btn btn-sm btn-outline-primary" title="View">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                
+                                {% if session.user_role == 'testator' and will[3] == 'Draft' %}
+                                <a href="#" class="btn btn-sm btn-outline-secondary" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        onclick="confirmDelete({{ will[0] }})" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
+                                
+                                {% if will[3] == 'Draft' and session.user_role in ['testator', 'admin'] %}
+                                <form method="POST" action="{{ url_for('approve_will', will_id=will[0]) }}" 
+                                      style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-outline-success" 
+                                            title="Submit for Approval">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-scroll fa-3x text-muted mb-3"></i>
+            <p class="text-muted">No wills found.</p>
+            {% if session.user_role == 'testator' %}
+            <a href="{{ url_for('create_will') }}" class="btn btn-primary">
+                <i class="fas fa-plus-circle"></i> Create Your First Will
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this will? This action cannot be undone.</p>
+                <p class="text-danger"><strong>Warning:</strong> All associated assets, beneficiaries, and documents will also be deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete Will</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(willId) {
+    // Set the form action
+    document.getElementById('deleteForm').action = `/wills/${willId}/delete`;
+    
+    // Show the modal
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+</script>
+{% endblock %}

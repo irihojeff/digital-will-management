@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+
+{% block title %}Test Procedures - Digital Will Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3">
+                <i class="fas fa-cogs me-2"></i>Test PL/SQL Procedures & Triggers
+            </h1>
+            <div class="text-muted">
+                <i class="fas fa-flask me-1"></i>Interactive Testing Interface
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Procedures Testing Cards -->
+<div class="row">
+    <!-- Will Approval Procedure -->
+    <div class="col-lg-6 col-xl-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-check-circle me-2"></i>Will Approval
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Test the <code>approve_will</code> procedure that validates executors, 
+                    asset allocation, and updates will status from Draft to Approved.
+                </p>
+                
+                <div class="mb-3">
+                    <h6 class="text-muted">Validations:</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success me-2"></i>At least one executor exists</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Primary executor assigned</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Assets 90%+ allocated</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Status is currently Draft</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-3">
+                    <span class="badge bg-info">Triggers Status History</span>
+                    <span class="badge bg-success">Updates Timestamp</span>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('test_approval_form') }}" class="btn btn-primary w-100">
+                    <i class="fas fa-play me-2"></i>Test Approval Procedure
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Asset Assignment Procedure -->
+    <div class="col-lg-6 col-xl-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-handshake me-2"></i>Asset Assignment
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Test the <code>assign_asset_to_beneficiary</code> procedure that assigns 
+                    beneficiaries to assets with share percentages and conditions.
+                </p>
+                
+                <div class="mb-3">
+                    <h6 class="text-muted">Validations:</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success me-2"></i>Asset exists and accessible</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Beneficiary exists</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Will not executed</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Total shares ≤ 100%</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-3">
+                    <span class="badge bg-warning">Share Validation Trigger</span>
+                    <span class="badge bg-info">Audit Logging</span>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('test_asset_assignment_form') }}" class="btn btn-success w-100">
+                    <i class="fas fa-play me-2"></i>Test Assignment Procedure
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Asset Transfer Procedure -->
+    <div class="col-lg-6 col-xl-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="fas fa-exchange-alt me-2"></i>Asset Transfer
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Test the <code>transfer_asset</code> procedure that initiates asset 
+                    transfers to beneficiaries and logs transfer activities.
+                </p>
+                
+                <div class="mb-3">
+                    <h6 class="text-muted">Validations:</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success me-2"></i>Asset-beneficiary linkage</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Will status Approved/Executing</li>
+                        <li><i class="fas fa-check text-success me-2"></i>No duplicate transfers</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Weekend/holiday restrictions</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-3">
+                    <span class="badge bg-danger">Weekend/Holiday Trigger</span>
+                    <span class="badge bg-primary">Status Update</span>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('test_transfer_form') }}" class="btn btn-warning w-100">
+                    <i class="fas fa-play me-2"></i>Test Transfer Procedure
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Management -->
+    <div class="col-lg-6 col-xl-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-upload me-2"></i>Document Management
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Test the <code>add_document</code> procedure that attaches documents 
+                    to wills or assets with validation and audit tracking.
+                </p>
+                
+                <div class="mb-3">
+                    <h6 class="text-muted">Features:</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success me-2"></i>Entity validation (WILL/ASSET)</li>
+                        <li><i class="fas fa-check text-success me-2"></i>File type validation</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Automatic timestamping</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Comprehensive auditing</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-3">
+                    <span class="badge bg-secondary">Entity Validation Trigger</span>
+                    <span class="badge bg-info">Audit Trail</span>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button class="btn btn-info w-100" onclick="testDocumentProcedure()">
+                    <i class="fas fa-play me-2"></i>Test Document Procedure
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Executor Management -->
+    <div class="col-lg-6 col-xl-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-tie me-2"></i>Executor Management
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Test the <code>set_primary_executor</code> procedure that manages 
+                    primary executor designation and ensures data consistency.
+                </p>
+                
+                <div class="mb-3">
+                    <h6 class="text-muted">Features:</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success me-2"></i>Single primary per will</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Data consistency fixes</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Transaction safety</li>
+                        <li><i class="fas fa-check text-success me-2"></i>Comprehensive logging</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-3">
+                    <span class="badge bg-warning">Primary Validation Trigger</span>
+                    <span class="badge bg-success">Auto-correction</span>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button class="btn btn-secondary w-100" onclick="testExecutorProcedure()">
+                    <i class="fas fa-play me-2"></i>Test Executor Procedure
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weekend/Holiday Restrictions -->
+    <div class="col-lg-6 col-xl-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-times me-2"></i>Weekend/Holiday Restrictions
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Test the assignment requirement: triggers that prevent data 
+                    manipulation on weekends and public holidays.
+                </p>
+                
+                <div class="mb-3">
+                    <h6 class="text-muted">Restrictions:</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-ban text-danger me-2"></i>No weekend transfers</li>
+                        <li><i class="fas fa-ban text-danger me-2"></i>Holiday blocking</li>
+                        <li><i class="fas fa-calendar text-info me-2"></i>Recurring holiday support</li>
+                        <li><i class="fas fa-clock text-warning me-2"></i>Real-time validation</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-3">
+                    <span class="badge bg-danger">BEFORE INSERT Trigger</span>
+                    <span class="badge bg-warning">Holiday Reference Table</span>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('weekend_holiday_test') }}" class="btn btn-danger w-100">
+                    <i class="fas fa-play me-2"></i>Test Restrictions
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Trigger Testing Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>Implemented Triggers Overview
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary">Data Validation Triggers</h6>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span><i class="fas fa-shield-alt text-success me-2"></i>Asset Share Validation</span>
+                                <span class="badge bg-success">Active</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span><i class="fas fa-user-check text-success me-2"></i>Single Primary Executor</span>
+                                <span class="badge bg-success">Active</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span><i class="fas fa-envelope text-success me-2"></i>Email Format Validation</span>
+                                <span class="badge bg-success">Active</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span><i class="fas fa-link text-success me-2"></i>Document Entity Validation</span>
+                                <span class="badge bg-success">Active</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-warning">Business Logic Triggers</h6>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span><i class="fas fa-calendar-times text-danger me-2"></i>Weekend/Holiday Blocking</span>
+                                <span class="badge bg-danger">Restrictive</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span><i class="fas fa-history text-info me-2"></i>Status Change Logging</span>
+                                <span class="badge bg-info">Auditing</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span><i class="fas fa-clock text-warning me-2"></i>Timestamp Updates</span>
+                                <span class="badge bg-warning">Automatic</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span><i class="fas fa-ban text-danger me-2"></i>Will Deletion Prevention</span>
+                                <span class="badge bg-danger">Security</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{{ url_for('audit_logs') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-eye me-2"></i>View Trigger Activity in Audit Logs
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function testDocumentProcedure() {
+    // For demonstration - in a real app, this would open a modal or redirect
+    alert('Document procedure test would be implemented here.\n\nThis would test:\n- Entity validation\n- File type validation\n- Audit logging\n- Error handling');
+}
+
+function testExecutorProcedure() {
+    // For demonstration - in a real app, this would open a modal or redirect
+    alert('Executor procedure test would be implemented here.\n\nThis would test:\n- Primary executor setting\n- Data consistency\n- Transaction safety\n- Audit logging');
+}
+</script>
+{% endblock %}

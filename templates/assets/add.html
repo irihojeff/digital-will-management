@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Add Asset - Digital Will Management System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-plus-circle"></i> Add New Asset</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_asset', will_id=will_id) }}" id="addAssetForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">Asset Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   placeholder="e.g., Family House, Bank Account" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="asset_type" class="form-label">Asset Type <span class="text-danger">*</span></label>
+                            <select class="form-select" id="asset_type" name="asset_type" required>
+                                <option value="">Select type...</option>
+                                <option value="Real Estate">Real Estate</option>
+                                <option value="Financial">Financial (Bank/Investment)</option>
+                                <option value="Vehicle">Vehicle</option>
+                                <option value="Personal">Personal Property</option>
+                                <option value="Business">Business Interest</option>
+                                <option value="Digital">Digital Assets</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="description" name="description" rows="3" 
+                                  placeholder="Provide detailed description of the asset" required></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="value" class="form-label">Estimated Value (₹)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control" id="value" name="value" 
+                                       min="0" step="0.01" placeholder="0.00">
+                            </div>
+                            <small class="text-muted">Leave blank if value is unknown</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="acquisition_date" class="form-label">Acquisition Date</label>
+                            <input type="date" class="form-control" id="acquisition_date" name="acquisition_date">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="location" class="form-label">Location/Details</label>
+                        <input type="text" class="form-control" id="location" name="location" 
+                               placeholder="e.g., Property address, Bank name and branch, Storage location">
+                    </div>
+                    
+                    <!-- Asset Type Specific Fields -->
+                    <div id="realEstateFields" class="asset-specific-fields d-none">
+                        <h5 class="mb-3">Real Estate Details</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="property_size" class="form-label">Property Size</label>
+                                <input type="text" class="form-control" id="property_size" name="property_size" 
+                                       placeholder="e.g., 1200 sq ft">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="property_type" class="form-label">Property Type</label>
+                                <select class="form-select" id="property_type" name="property_type">
+                                    <option value="">Select...</option>
+                                    <option value="House">House</option>
+                                    <option value="Apartment">Apartment</option>
+                                    <option value="Land">Land</option>
+                                    <option value="Commercial">Commercial</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="financialFields" class="asset-specific-fields d-none">
+                        <h5 class="mb-3">Financial Asset Details</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="account_number" class="form-label">Account/Policy Number</label>
+                                <input type="text" class="form-control" id="account_number" name="account_number" 
+                                       placeholder="Last 4 digits only">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="institution_name" class="form-label">Institution Name</label>
+                                <input type="text" class="form-control" id="institution_name" name="institution_name" 
+                                       placeholder="e.g., Bank of Kigali">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="vehicleFields" class="asset-specific-fields d-none">
+                        <h5 class="mb-3">Vehicle Details</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="vehicle_make" class="form-label">Make & Model</label>
+                                <input type="text" class="form-control" id="vehicle_make" name="vehicle_make" 
+                                       placeholder="e.g., Toyota Corolla">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="vehicle_year" class="form-label">Year</label>
+                                <input type="number" class="form-control" id="vehicle_year" name="vehicle_year" 
+                                       min="1900" max="2030" placeholder="e.g., 2020">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 
+                        <strong>Note:</strong> After adding the asset, you'll need to assign beneficiaries to it.
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-6">
+                            <a href="{{ url_for('view_will', will_id=will_id) }}" class="btn btn-secondary w-100">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-save"></i> Add Asset
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show/hide asset-specific fields based on type
+document.getElementById('asset_type').addEventListener('change', function() {
+    // Hide all specific fields
+    document.querySelectorAll('.asset-specific-fields').forEach(function(el) {
+        el.classList.add('d-none');
+    });
+    
+    // Show relevant fields
+    switch(this.value) {
+        case 'Real Estate':
+            document.getElementById('realEstateFields').classList.remove('d-none');
+            break;
+        case 'Financial':
+            document.getElementById('financialFields').classList.remove('d-none');
+            break;
+        case 'Vehicle':
+            document.getElementById('vehicleFields').classList.remove('d-none');
+            break;
+    }
+});
+
+// Form validation
+document.getElementById('addAssetForm').addEventListener('submit', function(e) {
+    const name = document.getElementById('name').value.trim();
+    const type = document.getElementById('asset_type').value;
+    const description = document.getElementById('description').value.trim();
+    
+    if (name.length < 3) {
+        e.preventDefault();
+        alert('Asset name must be at least 3 characters long');
+        return false;
+    }
+    
+    if (!type) {
+        e.preventDefault();
+        alert('Please select an asset type');
+        return false;
+    }
+    
+    if (description.length < 10) {
+        e.preventDefault();
+        alert('Please provide a more detailed description (at least 10 characters)');
+        return false;
+    }
+    
+    // Validate value if provided
+    const value = document.getElementById('value').value;
+    if (value && parseFloat(value) < 0) {
+        e.preventDefault();
+        alert('Asset value cannot be negative');
+        return false;
+    }
+});
+
+// Format currency input
+document.getElementById('value').addEventListener('input', function(e) {
+    let value = e.target.value;
+    // Remove any non-numeric characters except decimal point
+    value = value.replace(/[^\d.]/g, '');
+    // Ensure only one decimal point
+    const parts = value.split('.');
+    if (parts.length > 2) {
+        value = parts[0] + '.' + parts.slice(1).join('');
+    }
+    // Limit to 2 decimal places
+    if (parts[1] && parts[1].length > 2) {
+        value = parts[0] + '.' + parts[1].substring(0, 2);
+    }
+    e.target.value = value;
+});
+</script>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}{{ will[2] if will else 'Will Details' }} - Digital Will Management System{% endblock %}
+
+{% block content %}
+{% if will %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>{{ will[2] }}</h1>
+        <p class="text-muted">Created by: {{ will[7] }}</p>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('list_wills') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<!-- Will Status and Actions -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h5>Status: 
+                    {% if will[4] == 'Draft' %}
+                        <span class="badge bg-secondary">Draft</span>
+                    {% elif will[4] == 'Approved' %}
+                        <span class="badge bg-primary">Approved</span>
+                    {% elif will[4] == 'Executing' %}
+                        <span class="badge bg-warning text-dark">Executing</span>
+                    {% elif will[4] == 'Executed' %}
+                        <span class="badge bg-success">Executed</span>
+                    {% endif %}
+                </h5>
+                <p class="mb-0">{{ will[3] }}</p>
+            </div>
+            <div class="col-md-4 text-end">
+                {% if will[4] == 'Draft' and session.user_role == 'testator' %}
+                    <form method="POST" action="{{ url_for('approve_will', will_id=will[0]) }}" style="display: inline;">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check"></i> Submit for Approval
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assets Section -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-coins"></i> Assets</h5>
+        {% if will[4] == 'Draft' and session.user_role == 'testator' %}
+        <a href="{{ url_for('add_asset', will_id=will[0]) }}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus"></i> Add Asset
+        </a>
+        {% endif %}
