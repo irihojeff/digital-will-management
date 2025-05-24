@@ -3,39 +3,91 @@
 -- Purpose: No changes allowed on weekends or holidays
 -- ======================================
 
+-- Fixed trigger to handle NLS issues and provide better error messages
 CREATE OR REPLACE TRIGGER trg_block_weekend_holiday_transfer 
 BEFORE INSERT ON transfer_logs 
 FOR EACH ROW 
 DECLARE
-    v_day VARCHAR2(10);
+    v_day_number NUMBER;
     v_is_holiday NUMBER;
     v_holiday_name VARCHAR2(100);
+    v_transfer_date DATE := NVL(:NEW.transfer_date, SYSDATE);
 BEGIN
-    -- Get the day of week for the transfer date
-    SELECT TO_CHAR(:NEW.transfer_date, 'DY', 'NLS_DATE_LANGUAGE=EN') 
-    INTO v_day FROM dual;
+    -- Get the day of week as number (1=Sunday, 2=Monday, ..., 7=Saturday)
+    -- Using TO_CHAR with 'D' format which is NLS-independent
+    v_day_number := TO_NUMBER(TO_CHAR(v_transfer_date, 'D'));
     
-    -- Block transfers on weekends
-    IF v_day IN ('SAT', 'SUN') THEN
+    -- Block transfers on weekends (1=Sunday, 7=Saturday)
+    IF v_day_number IN (1, 7) THEN
         RAISE_APPLICATION_ERROR(-20001, 
-            'Transfers are not allowed on weekends. Attempted date: ' || 
-            TO_CHAR(:NEW.transfer_date, 'DD-MON-YYYY'));
+            'Weekend Transfer Blocked: Asset transfers are not allowed on weekends. ' ||
+            'Today is ' || TO_CHAR(v_transfer_date, 'Day') || 
+            '. Please try again on a weekday (Monday-Friday).');
     END IF;
     
     -- Check for holidays (both exact and recurring)
-    SELECT COUNT(*), MAX(description) INTO v_is_holiday, v_holiday_name
-    FROM holidays
-    WHERE (TRUNC(holiday_date) = TRUNC(:NEW.transfer_date)) -- Exact match
-       OR (is_recurring = 'Y' AND 
-           TO_CHAR(holiday_date, 'MM-DD') = TO_CHAR(:NEW.transfer_date, 'MM-DD'));
+    BEGIN
+        SELECT COUNT(*), MAX(description) 
+        INTO v_is_holiday, v_holiday_name
+        FROM holidays
+        WHERE (TRUNC(holiday_date) = TRUNC(v_transfer_date)) -- Exact match
+           OR (is_recurring = 'Y' AND 
+               TO_CHAR(holiday_date, 'MM-DD') = TO_CHAR(v_transfer_date, 'MM-DD'));
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            v_is_holiday := 0;
+            v_holiday_name := NULL;
+    END;
     
     IF v_is_holiday > 0 THEN
         RAISE_APPLICATION_ERROR(-20002, 
-            'Transfers are not allowed on holidays. ' || 
-            v_holiday_name || ' (' || TO_CHAR(:NEW.transfer_date, 'DD-MON-YYYY') || ')');
+            'Holiday Transfer Blocked: Asset transfers are not allowed on public holidays. ' ||
+            'Today is ' || NVL(v_holiday_name, 'a public holiday') || 
+            ' (' || TO_CHAR(v_transfer_date, 'DD-MON-YYYY') || '). ' ||
+            'Please try again on a regular business day.');
+    END IF;
+    
+EXCEPTION
+    WHEN OTHERS THEN
+        -- If it's our custom errors, re-raise them
+        IF SQLCODE IN (-20001, -20002) THEN
+            RAISE;
+        ELSE
+            -- For any other errors, provide a generic message
+            RAISE_APPLICATION_ERROR(-20099, 
+                'Transfer Validation Error: Unable to validate transfer timing. ' ||
+                'Please contact system administrator. Error: ' || SQLERRM);
+        END IF;
+END;
+/
+
+-- Also let's create a simple test procedure to check weekend blocking
+CREATE OR REPLACE PROCEDURE test_weekend_blocking 
+IS
+    v_day_number NUMBER;
+    v_day_name VARCHAR2(20);
+    v_is_weekend VARCHAR2(10);
+BEGIN
+    -- Get current day info
+    v_day_number := TO_NUMBER(TO_CHAR(SYSDATE, 'D'));
+    v_day_name := TRIM(TO_CHAR(SYSDATE, 'Day'));
+    
+    IF v_day_number IN (1, 7) THEN
+        v_is_weekend := 'YES';
+        DBMS_OUTPUT.PUT_LINE('Weekend Blocking Test Results:');
+        DBMS_OUTPUT.PUT_LINE('Current Day: ' || v_day_name || ' (Day #' || v_day_number || ')');
+        DBMS_OUTPUT.PUT_LINE('Status: WEEKEND - Transfers would be BLOCKED');
+        DBMS_OUTPUT.PUT_LINE('Message: Asset transfers are not allowed on weekends');
+    ELSE
+        v_is_weekend := 'NO';
+        DBMS_OUTPUT.PUT_LINE('Weekend Blocking Test Results:');
+        DBMS_OUTPUT.PUT_LINE('Current Day: ' || v_day_name || ' (Day #' || v_day_number || ')');
+        DBMS_OUTPUT.PUT_LINE('Status: WEEKDAY - Transfers would be ALLOWED');
+        DBMS_OUTPUT.PUT_LINE('Message: Normal business day, transfers permitted');
     END IF;
 END;
 /
+
 
 -- ======================================
 -- Trigger: trg_status_change_log

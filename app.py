@@ -38,7 +38,13 @@ def create_app():
         def deco(f):
             @wraps(f)
             def wrapped(*args, **kwargs):
-                if session.get('user_role') not in roles:
+                user_role = session.get('user_role')
+                all_roles = session.get('all_roles', [])
+                
+                # Check if user has any of the required roles
+                has_permission = any(role in all_roles for role in roles)
+                
+                if not has_permission:
                     flash('You do not have permission.', 'danger')
                     return redirect(url_for('dashboard'))
                 return f(*args, **kwargs)
@@ -46,8 +52,85 @@ def create_app():
         return deco
 
     # ─── Helper Functions ────────────────────────
+    def determine_user_role(user_id, email):
+        """Determine user role based on their presence in different tables"""
+        try:
+            with db.get_cursor() as cur:
+                # First check if user has an initial_role set during registration
+                cur.execute("SELECT initial_role FROM users WHERE user_id = :user_id", {'user_id': user_id})
+                initial_role_result = cur.fetchone()
+                initial_role = initial_role_result[0] if initial_role_result else None
+                
+                # If they registered as admin, they remain admin
+                if initial_role == 'admin':
+                    return 'admin'
+                
+                # Check if user owns any wills (testator)
+                cur.execute("SELECT COUNT(*) FROM wills WHERE user_id = :user_id", {'user_id': user_id})
+                will_count = cur.fetchone()[0]
+                
+                # Check if user is an executor
+                cur.execute("SELECT COUNT(*) FROM executors WHERE email = :email", {'email': email})
+                executor_count = cur.fetchone()[0]
+                
+                # Check if user is a beneficiary
+                cur.execute("SELECT COUNT(*) FROM beneficiaries WHERE email = :email", {'email': email})
+                beneficiary_count = cur.fetchone()[0]
+                
+                # Determine primary role (prioritize testator > executor > beneficiary > initial_role)
+                if will_count > 0:
+                    return 'testator'
+                elif executor_count > 0:
+                    return 'executor'
+                elif beneficiary_count > 0:
+                    return 'beneficiary'
+                elif initial_role:
+                    return initial_role  # Use their registered role
+                else:
+                    return 'user'  # Default role for users without specific assignments
+        except Exception as e:
+            print(f"Error determining user role: {e}")
+            return 'user'  # Default fallback role
+
+    def get_user_roles(user_id, email):
+        """Get all roles a user has (they might have multiple roles)"""
+        roles = []
+        try:
+            with db.get_cursor() as cur:
+                # Check initial role from registration
+                cur.execute("SELECT initial_role FROM users WHERE user_id = :user_id", {'user_id': user_id})
+                initial_role_result = cur.fetchone()
+                initial_role = initial_role_result[0] if initial_role_result else None
+                
+                if initial_role == 'admin':
+                    roles.append('admin')
+                
+                # Check testator role
+                cur.execute("SELECT COUNT(*) FROM wills WHERE user_id = :user_id", {'user_id': user_id})
+                if cur.fetchone()[0] > 0:
+                    roles.append('testator')
+                
+                # Check executor role
+                cur.execute("SELECT COUNT(*) FROM executors WHERE email = :email", {'email': email})
+                if cur.fetchone()[0] > 0:
+                    roles.append('executor')
+                
+                # Check beneficiary role
+                cur.execute("SELECT COUNT(*) FROM beneficiaries WHERE email = :email", {'email': email})
+                if cur.fetchone()[0] > 0:
+                    roles.append('beneficiary')
+                
+                # If no specific roles found, use initial role
+                if not roles and initial_role:
+                    roles.append(initial_role)
+                    
+        except Exception as e:
+            print(f"Error getting user roles: {e}")
+        
+        return roles if roles else ['user']
+
     def safe_execute_procedure(cursor, proc_name, params):
-        """Safely execute stored procedures with error handling"""
+        """Safely execute stored procedures with enhanced error handling"""
         try:
             cursor.callproc(proc_name, params)
             return True, None
@@ -58,20 +141,37 @@ def create_app():
             
             # Map Oracle error codes to user-friendly messages
             if error_code == 20001:
-                return False, "Operation blocked: Weekends are not allowed for transfers"
+                # Weekend blocking - extract clean message
+                if "Weekend Transfer Blocked:" in error_message:
+                    clean_message = error_message.split("Weekend Transfer Blocked:", 1)[1].strip()
+                    return False, f"⚠️ Weekend Restriction: {clean_message}"
+                else:
+                    return False, "⚠️ Weekend Restriction: Asset transfers are not allowed on weekends (Saturday/Sunday). Please try again on a weekday."
             elif error_code == 20002:
-                return False, "Operation blocked: Holidays are not allowed for transfers"
+                # Holiday blocking - extract clean message
+                if "Holiday Transfer Blocked:" in error_message:
+                    clean_message = error_message.split("Holiday Transfer Blocked:", 1)[1].strip()
+                    return False, f"🎄 Holiday Restriction: {clean_message}"
+                else:
+                    return False, "🎄 Holiday Restriction: Asset transfers are not allowed on public holidays. Please try again on a regular business day."
+            elif error_code == 20099:
+                # Transfer validation error
+                return False, "❌ Transfer Validation Error: Unable to process transfer at this time. Please contact system administrator."
             elif error_code in (21001, 21002, 23001, 23002):
-                return False, "Invalid ID provided - record does not exist"
+                return False, "❌ Invalid Data: The specified record does not exist in the system."
             elif error_code == 21003:
-                return False, "Cannot modify - will has already been executed"
+                return False, "🔒 Cannot Modify: This will has already been executed and cannot be changed."
             elif error_code == 21004:
-                return False, "Asset allocation exceeds 100%"
+                return False, "📊 Allocation Error: Asset allocation cannot exceed 100%. Please adjust the percentages."
             elif error_code in (20091, 20092, 20093, 20094, 20095):
-                return False, f"Will approval error: {error_message.split(':', 1)[-1].strip()}"
+                return False, f"📋 Will Approval Error: {error_message.split(':', 1)[-1].strip()}"
+            elif error_code == 12702:
+                # NLS parameter error - provide helpful message
+                return False, "🌐 System Configuration Issue: There's a language setting problem. Please contact system administrator."
             else:
-                return False, f"Database error: {error_message}"
-
+                # For any other database errors, provide a clean generic message
+                return False, f"⚠️ Database Operation Failed: Please try again or contact support if the problem persists."
+    
     # ─── Routes ───────────────────────────────────────
 
     @app.route('/')
@@ -91,25 +191,48 @@ def create_app():
             try:
                 with db.get_cursor() as cur:
                     cur.execute("""
-                        SELECT user_id, full_name, email, 
-                               NVL((SELECT 'testator' FROM dual), 'user') as role
+                        SELECT user_id, full_name, email, password_hash
                         FROM users
                         WHERE email = :user_email
                     """, {'user_email': email})
                     row = cur.fetchone()
                     
-                    if row:  # For demo, we'll accept any password
-                        session.update({
-                            'user_id': row[0],
-                            'user_name': row[1],
-                            'user_email': row[2],
-                            'user_role': 'testator'  # Default role for demo
-                        })
-                        session.permanent = True
-                        flash(f'Welcome, {row[1]}!', 'success')
-                        return redirect(url_for('dashboard'))
+                    if row:
+                        user_id, full_name, user_email, stored_password = row
+                        
+                        # For demo purposes, if password_hash is NULL, allow any password
+                        # In production, you should require proper password hashing
+                        password_valid = False
+                        
+                        if stored_password is None:
+                            # Demo mode - accept any password but recommend setting up proper passwords
+                            password_valid = True
+                            flash('Demo mode: Please set up proper passwords in production.', 'warning')
+                        else:
+                            # Check hashed password
+                            password_valid = check_password_hash(stored_password, password)
+                        
+                        if password_valid:
+                            # Determine user role based on their assignments
+                            primary_role = determine_user_role(user_id, user_email)
+                            all_roles = get_user_roles(user_id, user_email)
+                            
+                            session.update({
+                                'user_id': user_id,
+                                'user_name': full_name,
+                                'user_email': user_email,
+                                'user_role': primary_role,
+                                'all_roles': all_roles  # Store all roles for advanced permissions
+                            })
+                            session.permanent = True
+                            
+                            flash(f'Welcome, {full_name}! Logged in as {primary_role}.', 'success')
+                            return redirect(url_for('dashboard'))
+                        else:
+                            flash('Invalid password.', 'danger')
                     else:
-                        flash('Invalid credentials.', 'danger')
+                        flash('Invalid email address.', 'danger')
+                        
             except oracledb.Error as err:
                 flash(f'Login error: {err}', 'danger')
         
@@ -121,14 +244,33 @@ def create_app():
             full_name = request.form.get('full_name')
             email = request.form.get('email')
             password = request.form.get('password')
+            confirm_password = request.form.get('confirm_password')
             phone = request.form.get('phone')
             dob = request.form.get('dob')
             address = request.form.get('address')
+            initial_role = request.form.get('initial_role')
+            admin_code = request.form.get('admin_code')
             
             # Validate required fields
-            if not all([full_name, email, password]):
-                flash('Full name, email, and password are required.', 'danger')
+            if not all([full_name, email, password, initial_role]):
+                flash('Full name, email, password, and account type are required.', 'danger')
                 return render_template('register.html')
+            
+            # Validate password confirmation
+            if password != confirm_password:
+                flash('Password confirmation does not match.', 'danger')
+                return render_template('register.html')
+            
+            # Validate password strength
+            if len(password) < 6:
+                flash('Password must be at least 6 characters long.', 'danger')
+                return render_template('register.html')
+            
+            # Validate admin code if registering as admin
+            if initial_role == 'admin':
+                if not admin_code or admin_code != 'ADMIN2025':
+                    flash('Invalid admin access code.', 'danger')
+                    return render_template('register.html')
             
             try:
                 with db.get_cursor() as cur:
@@ -138,25 +280,30 @@ def create_app():
                         flash('Email already registered.', 'warning')
                         return render_template('register.html')
                     
-                    # Insert new user
+                    # Hash the password
+                    password_hash = generate_password_hash(password)
+                    
+                    # Insert new user with hashed password and initial role
                     cur.execute("""
                         INSERT INTO users (
-                            full_name, email, phone_number,
-                            date_of_birth, address
+                            full_name, email, password_hash, phone_number,
+                            date_of_birth, address, initial_role
                         ) VALUES (
-                            :user_name, :user_email, :user_phone,
+                            :user_name, :user_email, :password_hash, :user_phone,
                             CASE WHEN :user_dob IS NOT NULL THEN TO_DATE(:user_dob,'YYYY-MM-DD') ELSE NULL END, 
-                            :user_addr
+                            :user_addr, :initial_role
                         )
                     """, {
                         'user_name': full_name,
                         'user_email': email,
-                        'user_phone': phone,
+                        'password_hash': password_hash,
+                        'user_phone': phone if phone else None,
                         'user_dob': dob if dob else None,
-                        'user_addr': address
+                        'user_addr': address if address else None,
+                        'initial_role': initial_role
                     })
                     
-                flash('Registration successful—please log in.', 'success')
+                flash('Registration successful! Please log in.', 'success')
                 return redirect(url_for('login'))
                 
             except oracledb.Error as err:
@@ -167,12 +314,13 @@ def create_app():
     @app.route('/dashboard')
     @login_required
     def dashboard():
-        role = session.get('user_role', 'testator')
+        role = session.get('user_role', 'user')
+        all_roles = session.get('all_roles', [role])
         stats = {}
         
         try:
             with db.get_cursor() as cur:
-                if role == 'testator':
+                if 'testator' in all_roles:
                     # Get user's wills count
                     cur.execute("SELECT COUNT(*) FROM wills WHERE user_id = :user_id_param", {'user_id_param': session['user_id']})
                     stats['total_wills'] = cur.fetchone()[0]
@@ -205,7 +353,7 @@ def create_app():
                     """, {'user_id_param': session['user_id']})
                     stats['total_beneficiaries'] = cur.fetchone()[0]
 
-                elif role == 'executor':
+                if 'executor' in all_roles:
                     # Executor-specific stats
                     cur.execute("SELECT COUNT(*) FROM executors WHERE email = :exec_email", 
                                {'exec_email': session['user_email']})
@@ -221,7 +369,7 @@ def create_app():
                     """, {'exec_email': session['user_email'], 'transfer_status': 'Initiated'})
                     stats['pending_transfers'] = cur.fetchone()[0]
 
-                elif role == 'beneficiary':
+                if 'beneficiary' in all_roles:
                     # Beneficiary-specific stats
                     cur.execute("""
                         SELECT COUNT(*), NVL(SUM(a.value * wab.share_percent/100), 0) 
@@ -231,22 +379,57 @@ def create_app():
                         WHERE b.email = :ben_email
                     """, {'ben_email': session['user_email']})
                     result = cur.fetchone()
-                    stats['assigned_assets'] = result[0]
+                    stats['assigned_assets'] = result[0] if result else 0
                     stats['total_value'] = result[1] if result else 0
+
+                if 'admin' in all_roles:
+                    # Admin-specific stats
+                    cur.execute("""
+                        SELECT 
+                            (SELECT COUNT(*) FROM users) as total_users,
+                            (SELECT COUNT(*) FROM wills) as total_wills,
+                            (SELECT COUNT(*) FROM assets) as total_assets,
+                            (SELECT COUNT(*) FROM transfer_logs) as total_transfers
+                        FROM dual
+                    """)
+                    admin_stats = cur.fetchone()
+                    stats.update({
+                        'system_users': admin_stats[0],
+                        'system_wills': admin_stats[1],
+                        'system_assets': admin_stats[2],
+                        'system_transfers': admin_stats[3]
+                    })
 
         except oracledb.Error as err:
             flash(f"Dashboard load error: {err}", 'danger')
             print(f"Database error: {err}")  # For debugging
 
         today = datetime.now()
-        return render_template('dashboard.html', role=role, stats=stats, today=today)
+        return render_template('dashboard.html', role=role, all_roles=all_roles, stats=stats, today=today)
+
+    @app.route('/switch-role/<role>')
+    @login_required
+    def switch_role(role):
+        """Allow users with multiple roles to switch between them"""
+        all_roles = session.get('all_roles', [])
+        
+        if role in all_roles:
+            session['user_role'] = role
+            flash(f'Switched to {role} role.', 'info')
+        else:
+            flash('You do not have permission for that role.', 'danger')
+        
+        return redirect(url_for('dashboard'))
 
     @app.route('/wills')
     @login_required
     def list_wills():
+        user_role = session.get('user_role')
+        all_roles = session.get('all_roles', [])
+        
         try:
             with db.get_cursor() as cur:
-                if session['user_role'] == 'testator':
+                if user_role == 'testator' or 'testator' in all_roles:
                     cur.execute("""
                         SELECT will_id, title, description, status, created_at,
                                (SELECT COUNT(*) FROM assets WHERE will_id = w.will_id) as asset_count,
@@ -255,7 +438,7 @@ def create_app():
                         WHERE user_id = :user_id_param
                         ORDER BY created_at DESC
                     """, {'user_id_param': session['user_id']})
-                else:
+                elif user_role == 'executor' or 'executor' in all_roles:
                     cur.execute("""
                         SELECT DISTINCT w.will_id, w.title, w.description, w.status, w.created_at,
                                (SELECT COUNT(*) FROM assets WHERE will_id = w.will_id) as asset_count,
@@ -265,6 +448,18 @@ def create_app():
                         WHERE e.email = :exec_email
                         ORDER BY w.created_at DESC
                     """, {'exec_email': session['user_email']})
+                elif user_role == 'admin' or 'admin' in all_roles:
+                    cur.execute("""
+                        SELECT will_id, title, description, status, created_at,
+                               (SELECT COUNT(*) FROM assets WHERE will_id = w.will_id) as asset_count,
+                               (SELECT COUNT(*) FROM executors WHERE will_id = w.will_id) as executor_count
+                        FROM wills w
+                        ORDER BY created_at DESC
+                    """)
+                else:
+                    flash('You do not have permission to view wills.', 'danger')
+                    return redirect(url_for('dashboard'))
+                    
                 wills = cur.fetchall()
         except oracledb.Error as err:
             flash(f'Error fetching wills: {err}', 'danger')
@@ -286,7 +481,6 @@ def create_app():
             
             try:
                 with db.get_cursor() as cur:
-                    # FIXED: Corrected parameter names to match SQL placeholders
                     cur.execute("""
                         INSERT INTO wills(user_id, title, description, status)
                         VALUES(:user_id_param, :will_title, :will_desc, 'Draft')
@@ -319,6 +513,28 @@ def create_app():
                 
                 if not will:
                     flash('Will not found.', 'danger')
+                    return redirect(url_for('list_wills'))
+                
+                # Check permission
+                user_role = session.get('user_role')
+                all_roles = session.get('all_roles', [])
+                user_email = session.get('user_email')
+                user_id = session.get('user_id')
+                
+                has_permission = False
+                if 'admin' in all_roles:
+                    has_permission = True
+                elif 'testator' in all_roles and will[1] == user_id:  # will[1] is user_id
+                    has_permission = True
+                elif 'executor' in all_roles:
+                    # Check if user is executor for this will
+                    cur.execute("SELECT COUNT(*) FROM executors WHERE will_id = :will_id AND email = :email", 
+                               {'will_id': will_id, 'email': user_email})
+                    if cur.fetchone()[0] > 0:
+                        has_permission = True
+                
+                if not has_permission:
+                    flash('You do not have permission to view this will.', 'danger')
                     return redirect(url_for('list_wills'))
                 
                 # Get assets with allocation percentages
@@ -395,7 +611,6 @@ def create_app():
             
             try:
                 with db.get_cursor() as cur:
-                    # FIXED: Corrected parameter names to match SQL placeholders
                     cur.execute("""
                         INSERT INTO assets(
                             will_id, name, description, asset_type,
@@ -535,7 +750,6 @@ def create_app():
             
             try:
                 with db.get_cursor() as cur:
-                    # FIXED: Corrected parameter names to match SQL placeholders
                     cur.execute("""
                         INSERT INTO beneficiaries(
                             full_name, relation, email, phone_number,
@@ -602,7 +816,6 @@ def create_app():
                     cur.execute("SELECT COUNT(*) FROM executors WHERE will_id = :will_id_param", {'will_id_param': will_id})
                     is_first_executor = cur.fetchone()[0] == 0
                     
-                    # FIXED: Corrected parameter names to match SQL placeholders
                     cur.execute("""
                         INSERT INTO executors(
                             will_id, full_name, email, phone_number, relation, is_primary
@@ -631,7 +844,10 @@ def create_app():
     def list_transfers():
         try:
             with db.get_cursor(commit=False) as cur:
-                if session['user_role'] == 'admin':
+                user_role = session.get('user_role')
+                all_roles = session.get('all_roles', [])
+                
+                if 'admin' in all_roles:
                     cur.execute("""
                         SELECT t.transfer_id, a.name as asset_name, b.full_name as beneficiary_name,
                                t.transfer_date, t.transfer_status, t.approved_by, t.notes,
@@ -1031,6 +1247,111 @@ def create_app():
                                has_prev=has_prev,
                                total_logs=total_logs)
 
+    @app.route('/admin/users')
+    @login_required
+    @role_required(['admin'])
+    def manage_users():
+        """Admin interface to manage all users"""
+        try:
+            with db.get_cursor(commit=False) as cur:
+                cur.execute("""
+                    SELECT u.user_id, u.full_name, u.email, u.initial_role, u.created_at,
+                           (SELECT COUNT(*) FROM wills WHERE user_id = u.user_id) as wills_count,
+                           (SELECT COUNT(*) FROM executors WHERE email = u.email) as executor_count,
+                           (SELECT COUNT(*) FROM beneficiaries WHERE email = u.email) as beneficiary_count
+                    FROM users u
+                    ORDER BY u.created_at DESC
+                """)
+                users = cur.fetchall()
+        except oracledb.Error as err:
+            flash(f'Error fetching users: {err}', 'danger')
+            users = []
+        
+        return render_template('admin/users.html', users=users)
+
+    @app.route('/admin/test-weekend-transfer')
+    @login_required
+    @role_required(['admin'])
+    def test_weekend_transfer():
+        """Test weekend transfer blocking for demonstration"""
+        try:
+            with db.get_cursor() as cur:
+                # First check if it's actually a weekend
+                cur.execute("SELECT TO_NUMBER(TO_CHAR(SYSDATE, 'D')) FROM dual")
+                day_number = cur.fetchone()[0]
+                is_weekend = day_number in [1, 7]  # 1=Sunday, 7=Saturday
+                
+                # Get day name for display
+                cur.execute("SELECT TO_CHAR(SYSDATE, 'Day') FROM dual")
+                day_name = cur.fetchone()[0].strip()
+                
+                if is_weekend:
+                    flash(f'🚫 Weekend Blocking Active: Today is {day_name}. Transfer restrictions are in effect as designed.', 'warning')
+                else:
+                    # Get any asset and beneficiary for testing
+                    cur.execute("""
+                        SELECT wab.asset_id, wab.beneficiary_id, a.name, b.full_name
+                        FROM will_asset_beneficiaries wab
+                        JOIN assets a ON wab.asset_id = a.asset_id
+                        JOIN beneficiaries b ON wab.beneficiary_id = b.beneficiary_id
+                        WHERE ROWNUM = 1
+                    """)
+                    test_data = cur.fetchone()
+                    
+                    if test_data:
+                        asset_id, beneficiary_id, asset_name, beneficiary_name = test_data
+                        success, error_msg = safe_execute_procedure(cur, 'transfer_asset', [asset_id, beneficiary_id])
+                        
+                        if success:
+                            flash(f'✅ Test Transfer Successful: {asset_name} to {beneficiary_name} (Today is {day_name} - weekday transfers allowed)', 'success')
+                        else:
+                            flash(f'Test Result: {error_msg}', 'info')
+                    else:
+                        flash(f'ℹ️ Test Info: Today is {day_name} (weekday). No test data available for transfer demonstration.', 'info')
+                        
+        except Exception as err:
+            flash(f'🔧 Test Error: Unable to perform weekend blocking test. Error: {str(err)}', 'danger')
+        
+        return redirect(url_for('system_statistics'))
+
+    @app.route('/api/weekend-check')
+    @login_required
+    def check_weekend_status():
+        """API endpoint to check if it's currently weekend"""
+        try:
+            with db.get_cursor() as cur:
+                cur.execute("""
+                    SELECT 
+                        TO_NUMBER(TO_CHAR(SYSDATE, 'D')) as day_number,
+                        TO_CHAR(SYSDATE, 'Day') as day_name,
+                        TO_CHAR(SYSDATE, 'DD-MON-YYYY') as date_str,
+                        CASE WHEN TO_NUMBER(TO_CHAR(SYSDATE, 'D')) IN (1, 7) 
+                             THEN 'true' 
+                             ELSE 'false' 
+                        END as is_weekend
+                    FROM dual
+                """)
+                result = cur.fetchone()
+                
+                return jsonify({
+                    'day_number': result[0],
+                    'day_name': result[1].strip(),
+                    'date': result[2],
+                    'is_weekend': result[3] == 'true',
+                    'status': 'Weekend transfers blocked' if result[3] == 'true' else 'Weekday transfers allowed'
+                })
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    @app.context_processor
+    def inject_template_vars():
+        """Inject commonly used variables into all templates"""
+        return {
+            'current_year': datetime.now().year,
+            'app_version': '1.0.0',
+            'is_weekend': datetime.now().weekday() >= 5
+        }
+
     @app.route('/logout')
     def logout():
         session.clear()
@@ -1118,15 +1439,6 @@ def create_app():
         except oracledb.Error as err:
             return jsonify({'error': str(err)}), 500
 
-    @app.context_processor
-    def inject_template_vars():
-        """Inject commonly used variables into all templates"""
-        return {
-            'current_year': datetime.now().year,
-            'app_version': '1.0.0',
-            'is_weekend': datetime.now().weekday() >= 5
-        }
-
     return app
 
 if __name__ == '__main__':
@@ -1140,9 +1452,13 @@ if __name__ == '__main__':
     ║  🔧 Debug mode: True                                         ║
     ║                                                              ║
     ║  📋 Demo Credentials:                                        ║
-    ║  👤 Testator: jean.claude@example.rw / demo123              ║
-    ║  ⚖️  Executor: solange.mukamana@lawfirm.rw / demo123        ║
-    ║  🎁 Beneficiary: eric.munyaneza@example.rw / demo123        ║
+    ║  👤 Testator: jean.claude@example.rw / any_password         ║
+    ║  ⚖️  Executor: solange.mukamana@lawfirm.rw / any_password   ║
+    ║  🎁 Beneficiary: eric.munyaneza@example.rw / any_password   ║
+    ║  🔧 Admin: admin@digitalwill.rw / any_password              ║
+    ║                                                              ║
+    ║  🔐 Admin Registration Code: ADMIN2025                      ║
+    ║  📊 New Features: Role switching, Admin panel, Audit logs   ║
     ╚══════════════════════════════════════════════════════════════╝
     """)
     app.run(debug=True, host='0.0.0.0', port=5000)

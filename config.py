@@ -16,9 +16,9 @@ class Config:
     SESSION_COOKIE_SAMESITE  = 'Lax'
 
     # Oracle DB credentials
-    ORACLE_USER       = os.getenv('ORACLE_USER', 'japhet_db')
-    ORACLE_PASSWORD   = os.getenv('ORACLE_PASSWORD', 'StrongPassword123')
-    ORACLE_DSN        = os.getenv('ORACLE_DSN', 'localhost:1521/XEPDB1')
+    ORACLE_USER       = os.getenv('ORACLE_USER', 'tues_27066_japhet_digitalwill_db')
+    ORACLE_PASSWORD   = os.getenv('ORACLE_PASSWORD', 'japhet')
+    ORACLE_DSN        = os.getenv('ORACLE_DSN', 'localhost:1521/tues_27066_japhet_digitalwill_db')
     ORACLE_THICK_MODE = False
     ORACLE_CLIENT_PATH = os.getenv(
         'ORACLE_CLIENT_PATH',

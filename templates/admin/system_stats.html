@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}System Statistics - Digital Will Management System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-chart-bar"></i> System Statistics</h1>
+    <div class="btn-group">
+        <button onclick="window.location.reload()" class="btn btn-outline-primary">
+            <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+        <a href="{{ url_for('view_audit_logs') }}" class="btn btn-outline-info">
+            <i class="fas fa-history"></i> Audit Logs
+        </a>
+        <a href="{{ url_for('manage_users') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-users"></i> Manage Users
+        </a>
+    </div>
+</div>
+
+<!-- System Overview Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Total Users</h5>
+                        <h2>{{ stats[0] if stats else 0 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Total Wills</h5>
+                        <h2>{{ stats[1] if stats else 0 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-file-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Total Assets</h5>
+                        <h2>{{ stats[2] if stats else 0 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-home fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Total Transfers</h5>
+                        <h2>{{ stats[6] if stats else 0 }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-exchange-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Will Status Distribution -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie"></i> Will Status Distribution</h5>
+            </div>
+            <div class="card-body">
+                {% if status_distribution %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Count</th>
+                                <th>Percentage</th>
+                                <th>Visual</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set total_wills = status_distribution|sum(attribute=1) %}
+                            {% for status, count in status_distribution %}
+                            {% set percentage = (count / total_wills * 100) if total_wills > 0 else 0 %}
+                            <tr>
+                                <td>
+                                    <span class="badge bg-{% if status == 'Draft' %}secondary{% elif status == 'Approved' %}primary{% elif status == 'Executing' %}warning{% elif status == 'Executed' %}success{% else %}dark{% endif %}">
+                                        {{ status }}
+                                    </span>
+                                </td>
+                                <td>{{ count }}</td>
+                                <td>{{ "%.1f"|format(percentage) }}%</td>
+                                <td>
+                                    <div class="progress" style="height: 10px;">
+                                        <div class="progress-bar bg-{% if status == 'Draft' %}secondary{% elif status == 'Approved' %}primary{% elif status == 'Executing' %}warning{% elif status == 'Executed' %}success{% else %}dark{% endif %}" 
+                                             style="width: {{ percentage }}%"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No will status data available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-tools"></i> Admin Tools</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('test_weekend_transfer') }}" class="btn btn-outline-warning">
+                        <i class="fas fa-flask"></i> Test Weekend Transfer Block
+                    </a>
+                    <a href="{{ url_for('view_audit_logs') }}" class="btn btn-outline-info">
+                        <i class="fas fa-history"></i> View Audit Trail
+                    </a>
+                    <a href="{{ url_for('manage_users') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-users-cog"></i> Manage Users
+                    </a>
+                    <button class="btn btn-outline-success" onclick="exportAuditLogs()">
+                        <i class="fas fa-download"></i> Export Logs
+                    </button>
+                </div>
+                
+                <hr>
+                
+                <div class="small">
+                    <h6>System Health</h6>
+                    <div class="d-flex justify-content-between">
+                        <span>Database:</span>
+                        <span class="text-success"><i class="fas fa-check-circle"></i> Connected</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Weekend Block:</span>
+                        <span class="text-{% if is_weekend %}warning{% else %}success{% endif %}">
+                            <i class="fas fa-{% if is_weekend %}exclamation-triangle{% else %}check-circle{% endif %}"></i> 
+                            {% if is_weekend %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="card">
+    <div class="card-header">
+        <h5><i class="fas fa-clock"></i> Recent Activity (Last 30 Days)</h5>
+    </div>
+    <div class="card-body">
+        {% if recent_activity %}
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Activity</th>
+                        <th>Description</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for activity in recent_activity %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-{% if activity[0] == 'Will Created' %}success{% elif activity[0] == 'Transfer Initiated' %}warning{% else %}info{% endif %}">
+                                {{ activity[0] }}
+                            </span>
+                        </td>
+                        <td>{{ activity[1] }}</td>
+                        <td><small>{{ activity[2].strftime('%b %d, %Y %H:%M') if activity[2] else 'N/A' }}</small></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No Recent Activity</h5>
+            <p class="text-muted">No system activity in the last 30 days.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function exportAuditLogs() {
+    // Simple CSV export functionality
+    window.open('/audit/logs?export=csv', '_blank');
+}
+
+// Auto-refresh every 5 minutes
+setTimeout(function() {
+    window.location.reload();
+}, 300000);
+</script>
+{% endblock %}

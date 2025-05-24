@@ -71,3 +71,62 @@ ALTER TABLE audit_log
   RENAME COLUMN "TIMESTAMP" TO event_time;
 
 COMMIT;
+
+
+
+
+-- Step 1: First add the column
+ALTER TABLE users ADD (initial_role VARCHAR2(20));
+
+
+ALTER TABLE users ADD CONSTRAINT chk_initial_role 
+CHECK (initial_role IN ('testator', 'executor', 'beneficiary', 'admin', 'user'));
+
+-- Step 2: Update existing users
+UPDATE users SET initial_role = 'user' WHERE initial_role IS NULL;
+
+-- Step 3: Then add the constraint
+ALTER TABLE users ADD CONSTRAINT chk_initial_role 
+CHECK (initial_role IN ('testator', 'executor', 'beneficiary', 'admin', 'user'));
+
+-- Step 4: Create index for better performance
+CREATE INDEX idx_users_initial_role ON users(initial_role);
+
+
+-- Step 5: Create an admin user for testing (optional)
+INSERT INTO users (
+    full_name, email, password_hash, phone_number, 
+    address, initial_role, created_at
+) VALUES (
+    'System Administrator', 
+    'admin@digitalwill.rw', 
+    NULL,  -- Will work in demo mode (accepts any password)
+    '+250788999000',
+    'System Office, Kigali',
+    'admin',
+    SYSDATE
+);
+
+SELECT user_id, full_name, email, initial_role FROM users;
+
+
+UPDATE users 
+SET initial_role = 'admin' 
+WHERE user_id = 4 AND email = 'admin@digitalwill.rw';
+
+
+UPDATE users 
+SET initial_role = 'testator' 
+WHERE email = 'jean.claude@example.rw';
+
+UPDATE users 
+SET initial_role = 'executor' 
+WHERE email = 'solange.mukamana@lawfirm.rw';
+
+UPDATE users 
+SET initial_role = 'beneficiary' 
+WHERE email = 'eric.munyaneza@example.rw';
+
+COMMIT;
+
+SELECT name FROM v$database;
