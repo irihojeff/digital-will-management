@@ -1,0 +1,80 @@
+
+<!-- Will List Template -->
+<!-- templates/wills/list.html -->
+{% extends "base.html" %}
+
+{% block title %}My Wills - Digital Will Management System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1><i class="fas fa-scroll"></i> 
+    {% if session.user_role == 'testator' %}My Wills{% else %}Assigned Wills{% endif %}
+  </h1>
+  {% if session.user_role == 'testator' %}
+  <a href="{{ url_for('create_will') }}" class="btn btn-primary">
+    <i class="fas fa-plus"></i> Create New Will
+  </a>
+  {% endif %}
+</div>
+
+{% if wills %}
+<div class="row">
+  {% for will in wills %}
+  <div class="col-lg-6 mb-4">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">{{ will[1] }}</h5>
+        <span class="badge bg-{% if will[3] == 'Draft' %}secondary{% elif will[3] == 'Approved' %}primary{% elif will[3] == 'Executing' %}warning{% else %}success{% endif %}">
+          {{ will[3] }}
+        </span>
+      </div>
+      <div class="card-body">
+        <p class="card-text">{{ will[2] or 'No description provided' }}</p>
+        <div class="row text-center mb-3">
+          <div class="col-4">
+            <small class="text-muted">Assets</small>
+            <div class="h5 mb-0">{{ will[5] if will|length > 5 else 'N/A' }}</div>
+          </div>
+          <div class="col-4">
+            <small class="text-muted">Executors</small>
+            <div class="h5 mb-0">{{ will[6] if will|length > 6 else 'N/A' }}</div>
+          </div>
+          <div class="col-4">
+            <small class="text-muted">Created</small>
+            <div class="small">{{ will[4].strftime('%m/%d/%Y') if will[4] else 'N/A' }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="card-footer bg-transparent">
+        <div class="btn-group w-100" role="group">
+          <a href="{{ url_for('view_will', will_id=will[0]) }}" class="btn btn-outline-primary">
+            <i class="fas fa-eye"></i> View
+          </a>
+          {% if session.user_role == 'testator' and will[3] == 'Draft' %}
+          <button class="btn btn-outline-success" onclick="approveWill({{ will[0] }})">
+            <i class="fas fa-check"></i> Approve
+          </button>
+          {% endif %}
+          {% if session.user_role == 'testator' %}
+          <a href="{{ url_for('will_summary_report', will_id=will[0]) }}" class="btn btn-outline-info">
+            <i class="fas fa-file-alt"></i> Report
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5">
+  <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+  <h3>Will Not Found</h3>
+  <p class="text-muted">The requested will could not be found or you don't have access to it.</p>
+  <a href="{{ url_for('list_wills') }}" class="btn btn-primary">
+    <i class="fas fa-arrow-left"></i> Back to Wills
+  </a>
+</div>
+{% endif %}
+{% endblock %}
+

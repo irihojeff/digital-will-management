@@ -1,3 +1,4 @@
+<!-- templates/dashboard.html -->
 {% extends "base.html" %}
 
 {% block title %}Dashboard - Digital Will Management System{% endblock %}
@@ -18,28 +19,29 @@
   {% if role == 'testator' %}
     <div class="col-md-3 mb-3">
       <div class="stat-card">
-        <h3>{{ stats.total_wills }}</h3>
+        <h3>{{ stats.total_wills or 0 }}</h3>
         <p>Total Wills</p>
         <i class="fas fa-scroll fa-2x opacity-25 position-absolute top-0 end-0 p-3"></i>
       </div>
     </div>
     <div class="col-md-3 mb-3">
       <div class="stat-card" style="background: linear-gradient(135deg, #27ae60, #229954);">
-        <h3>{{ stats.total_assets }}</h3>
+        <h3>{{ stats.total_assets or 0 }}</h3>
         <p>Total Assets</p>
+        <small class="d-block mt-1">Value: ${{ "{:,.2f}".format(stats.total_assets_value or 0) }}</small>
         <i class="fas fa-coins fa-2x opacity-25 position-absolute top-0 end-0 p-3"></i>
       </div>
     </div>
     <div class="col-md-3 mb-3">
       <div class="stat-card" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
-        <h3>{{ stats.pending_wills }}</h3>
+        <h3>{{ stats.pending_wills or 0 }}</h3>
         <p>Pending Approval</p>
         <i class="fas fa-clock fa-2x opacity-25 position-absolute top-0 end-0 p-3"></i>
       </div>
     </div>
     <div class="col-md-3 mb-3">
       <div class="stat-card" style="background: linear-gradient(135deg, #f39c12, #d68910);">
-        <h3>{{ stats.total_beneficiaries }}</h3>
+        <h3>{{ stats.total_beneficiaries or 0 }}</h3>
         <p>Beneficiaries</p>
         <i class="fas fa-users fa-2x opacity-25 position-absolute top-0 end-0 p-3"></i>
       </div>
@@ -48,21 +50,21 @@
   {% elif role == 'executor' %}
     <div class="col-md-4 mb-3">
       <div class="stat-card">
-        <h3>{{ stats.assigned_wills }}</h3>
+        <h3>{{ stats.assigned_wills or 0 }}</h3>
         <p>Assigned Wills</p>
         <i class="fas fa-tasks fa-2x opacity-25 position-absolute top-0 end-0 p-3"></i>
       </div>
     </div>
     <div class="col-md-4 mb-3">
       <div class="stat-card" style="background: linear-gradient(135deg, #27ae60, #229954);">
-        <h3>{{ stats.pending_transfers }}</h3>
+        <h3>{{ stats.pending_transfers or 0 }}</h3>
         <p>Pending Transfers</p>
         <i class="fas fa-exchange-alt fa-2x opacity-25 position-absolute top-0 end-0 p-3"></i>
       </div>
     </div>
     <div class="col-md-4 mb-3">
       <div class="stat-card" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
-        <h3>{{ stats.completed_transfers }}</h3>
+        <h3>{{ stats.completed_transfers or 0 }}</h3>
         <p>Completed Transfers</p>
         <i class="fas fa-check-circle fa-2x opacity-25 position-absolute top-0 end-0 p-3"></i>
       </div>
@@ -71,15 +73,15 @@
   {% elif role == 'beneficiary' %}
     <div class="col-md-6 mb-3">
       <div class="stat-card">
-        <h3>{{ stats.assigned_assets }}</h3>
+        <h3>{{ stats.assigned_assets or 0 }}</h3>
         <p>Assigned Assets</p>
         <i class="fas fa-gift fa-2x opacity-25 position-absolute top-0 end-0 p-3"></i>
       </div>
     </div>
     <div class="col-md-6 mb-3">
       <div class="stat-card" style="background: linear-gradient(135deg, #27ae60, #229954);">
-        <h3>${{ stats.total_value | round(2) }}</h3>
-        <p>Total Value</p>
+        <h3>${{ "{:,.2f}".format(stats.total_value or 0) }}</h3>
+        <p>Total Inheritance Value</p>
         <i class="fas fa-dollar-sign fa-2x opacity-25 position-absolute top-0 end-0 p-3"></i>
       </div>
     </div>
@@ -106,13 +108,13 @@
             </div>
             <div class="col-md-6 mb-3">
               <a href="{{ url_for('manage_beneficiaries') }}" class="btn btn-success w-100">
-                <i class="fas fa-user-plus"></i> Add Beneficiary
+                <i class="fas fa-user-plus"></i> Manage Beneficiaries
               </a>
             </div>
             <div class="col-md-6 mb-3">
-              <a href="{{ url_for('upload_document') }}" class="btn btn-outline-success w-100">
+              <button class="btn btn-outline-success w-100" onclick="showUploadModal()">
                 <i class="fas fa-file-upload"></i> Upload Document
-              </a>
+              </button>
             </div>
           {% elif role == 'executor' %}
             <div class="col-md-6 mb-3">
@@ -132,54 +134,31 @@
               </a>
             </div>
             <div class="col-md-6 mb-3">
-              <a href="{{ url_for('download_documents') }}" class="btn btn-success w-100">
+              <button class="btn btn-success w-100" onclick="alert('Document download feature coming soon!')">
                 <i class="fas fa-file-download"></i> Download Documents
-              </a>
+              </button>
             </div>
           {% endif %}
         </div>
       </div>
     </div>
-
-    <!-- Recent Activity (static example or loop your real data) -->
-    <div class="card">
-      <div class="card-header"><h5><i class="fas fa-history"></i> Recent Activity</h5></div>
-      <div class="card-body">
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <tbody>
-              <tr>
-                <td><i class="fas fa-check-circle text-success"></i> Will "Family Property Distribution" approved</td>
-                <td class="text-end text-muted">2 hours ago</td>
-              </tr>
-              <tr>
-                <td><i class="fas fa-plus-circle text-primary"></i> New asset "Family House" added</td>
-                <td class="text-end text-muted">Yesterday</td>
-              </tr>
-              <tr>
-                <td><i class="fas fa-user-plus text-info"></i> Beneficiary "John Doe" assigned to asset</td>
-                <td class="text-end text-muted">3 days ago</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
   </div>
 
-  <!-- Side Panel -->
+  <!-- Side Panel with notifications and system info -->
   <div class="col-lg-4">
     <div class="card mb-4">
       <div class="card-header bg-warning text-dark">
-        <h5><i class="fas fa-bell"></i> Notifications</h5>
+        <h5><i class="fas fa-bell"></i> System Status</h5>
       </div>
       <div class="card-body">
         <div class="alert alert-info mb-2">
-          <small><i class="fas fa-info-circle"></i> Remember to complete asset allocation for "Business Assets"</small>
+          <small><i class="fas fa-info-circle"></i> System is operating normally</small>
         </div>
+        {% if today.weekday() in [5,6] %}
         <div class="alert alert-warning mb-2">
-          <small><i class="fas fa-exclamation-triangle"></i> Will "Family Trust" requires executor assignment</small>
+          <small><i class="fas fa-exclamation-triangle"></i> Asset transfers blocked - Weekend</small>
         </div>
+        {% endif %}
       </div>
     </div>
 
@@ -197,7 +176,7 @@
   </div>
 </div>
 
-<!-- Today's Date Info (for transfer restrictions) -->
+<!-- Today's Date Info -->
 <div class="row mt-4">
   <div class="col-12">
     <div class="alert alert-info">
@@ -210,4 +189,41 @@
     </div>
   </div>
 </div>
+
+<!-- Upload Document Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Select Document Type</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>What type of document would you like to upload?</p>
+        <div class="d-grid gap-2">
+          <button class="btn btn-outline-primary" onclick="redirectUpload('will', 0)">
+            <i class="fas fa-file-contract"></i> Will Document
+          </button>
+          <button class="btn btn-outline-success" onclick="redirectUpload('asset', 0)">
+            <i class="fas fa-file-invoice"></i> Asset Document
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showUploadModal() {
+  new bootstrap.Modal(document.getElementById('uploadModal')).show();
+}
+
+function redirectUpload(type, id) {
+  if (id === 0) {
+    alert('Please select a specific ' + type + ' from the list first');
+    return;
+  }
+  window.location.href = `/documents/upload/${type}/${id}`;
+}
+</script>
 {% endblock %}

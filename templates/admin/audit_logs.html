@@ -1,0 +1,185 @@
+<!-- Audit Logs Template -->
+<!-- templates/admin/audit_logs.html -->
+{% extends "base.html" %}
+
+{% block title %}Audit Logs - Digital Will Management System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1><i class="fas fa-history"></i> System Audit Logs</h1>
+  <div class="btn-group">
+    <button onclick="window.location.reload()" class="btn btn-outline-primary">
+      <i class="fas fa-sync-alt"></i> Refresh
+    </button>
+    <a href="{{ url_for('system_statistics') }}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left"></i> Back to Stats
+    </a>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="GET" class="row g-3">
+      <div class="col-md-3">
+        <label for="action" class="form-label">Action</label>
+        <select class="form-select" id="action" name="action">
+          <option value="">All Actions</option>
+          <option value="INSERT">Insert</option>
+          <option value="UPDATE">Update</option>
+          <option value="DELETE">Delete</option>
+          <option value="PROCEDURE">Procedure</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label for="table" class="form-label">Table</label>
+        <select class="form-select" id="table" name="table">
+          <option value="">All Tables</option>
+          <option value="WILLS">Wills</option>
+          <option value="ASSETS">Assets</option>
+          <option value="USERS">Users</option>
+          <option value="TRANSFER_LOGS">Transfers</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label for="status" class="form-label">Status</label>
+        <select class="form-select" id="status" name="status">
+          <option value="">All Status</option>
+          <option value="SUCCESS">Success</option>
+          <option value="ERROR">Error</option>
+          <option value="WARNING">Warning</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label for="date" class="form-label">Date</label>
+        <input type="date" class="form-control" id="date" name="date">
+      </div>
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-filter"></i> Apply Filters
+        </button>
+        <a href="{{ url_for('view_audit_logs') }}" class="btn btn-outline-secondary">
+          <i class="fas fa-times"></i> Clear
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Audit Logs Table -->
+{% if logs %}
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5><i class="fas fa-list"></i> Audit Entries ({{ total_logs }} total)</h5>
+    <small class="text-muted">Page {{ page }}</small>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Action</th>
+            <th>Table</th>
+            <th>Record ID</th>
+            <th>Status</th>
+            <th>Timestamp</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr>
+            <td><small>{{ log[0] }}</small></td>
+            <td>{{ log[1] or 'System' }}</td>
+            <td>
+              <span class="badge bg-{% if log[2] == 'INSERT' %}success{% elif log[2] == 'UPDATE' %}warning{% elif log[2] == 'DELETE' %}danger{% else %}info{% endif %}">
+                {{ log[2] }}
+              </span>
+            </td>
+            <td><small>{{ log[3] }}</small></td>
+            <td><small>{{ log[4] or 'N/A' }}</small></td>
+            <td>
+              <span class="badge bg-{% if log[8] == 'SUCCESS' %}success{% elif log[8] == 'ERROR' %}danger{% else %}warning{% endif %}">
+                {{ log[8] }}
+              </span>
+            </td>
+            <td><small>{{ log[7].strftime('%m/%d %H:%M') if log[7] else 'N/A' }}</small></td>
+            <td>
+              {% if log[5] or log[6] %}
+              <button class="btn btn-sm btn-outline-info" onclick="showLogDetails({{ log[0] }}, '{{ log[5]|replace("'", "\\'") if log[5] else '' }}', '{{ log[6]|replace("'", "\\'") if log[6] else '' }}')" title="View Details">
+                <i class="fas fa-eye"></i>
+              </button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <!-- Pagination -->
+  <div class="card-footer">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        {% if has_prev %}
+        <a href="{{ url_for('view_audit_logs', page=page-1) }}" class="btn btn-outline-primary">
+          <i class="fas fa-arrow-left"></i> Previous
+        </a>
+        {% endif %}
+      </div>
+      <div>
+        <span class="text-muted">Page {{ page }}</span>
+      </div>
+      <div>
+        {% if has_next %}
+        <a href="{{ url_for('view_audit_logs', page=page+1) }}" class="btn btn-outline-primary">
+          Next <i class="fas fa-arrow-right"></i>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+  <i class="fas fa-search fa-3x text-muted mb-3"></i>
+  <h3 class="text-muted">No Audit Logs Found</h3>
+  <p class="text-muted">No audit entries match your current filters.</p>
+</div>
+{% endif %}
+
+<!-- Log Details Modal -->
+<div class="modal fade" id="logDetailsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Audit Log Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h6>Old Values:</h6>
+            <pre id="oldValues" class="bg-light p-2 rounded" style="max-height: 200px; overflow-y: auto;"></pre>
+          </div>
+          <div class="col-md-6">
+            <h6>New Values:</h6>
+            <pre id="newValues" class="bg-light p-2 rounded" style="max-height: 200px; overflow-y: auto;"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showLogDetails(logId, oldValues, newValues) {
+  document.getElementById('oldValues').textContent = oldValues || 'No old values';
+  document.getElementById('newValues').textContent = newValues || 'No new values';
+  new bootstrap.Modal(document.getElementById('logDetailsModal')).show();
+}
+</script>
+{% endblock %}

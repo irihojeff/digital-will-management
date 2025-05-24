@@ -1,0 +1,179 @@
+<!-- Transfers List Template -->
+<!-- templates/transfers/list.html -->
+{% extends "base.html" %}
+
+{% block title %}Asset Transfers - Digital Will Management System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1><i class="fas fa-exchange-alt"></i> Asset Transfers</h1>
+  {% if session.user_role in ['admin'] %}
+  <div class="btn-group">
+    <button class="btn btn-outline-primary" onclick="refreshTransfers()">
+      <i class="fas fa-sync-alt"></i> Refresh
+    </button>
+    <a href="{{ url_for('system_statistics') }}" class="btn btn-outline-info">
+      <i class="fas fa-chart-bar"></i> Statistics
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+{% if transfers %}
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Transfer ID</th>
+            <th>Asset</th>
+            <th>Beneficiary</th>
+            <th>Value</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Approved By</th>
+            {% if session.user_role in ['executor', 'admin'] %}
+            <th>Actions</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for transfer in transfers %}
+          <tr>
+            <td>
+              <span class="badge bg-light text-dark">#{{ transfer[0] }}</span>
+            </td>
+            <td>
+              <strong>{{ transfer[1] }}</strong>
+              {% if transfer[7] %}
+                <br><small class="text-muted">Total: ${{ "{:,.2f}".format(transfer[7] or 0) }}</small>
+              {% endif %}
+            </td>
+            <td>{{ transfer[2] }}</td>
+            <td>
+              {% if transfer[8] and transfer[9] %}
+                <strong class="text-success">${{ "{:,.2f}".format(transfer[9] or 0) }}</strong>
+                <br><small class="text-muted">{{ transfer[8] }}% share</small>
+              {% else %}
+                <span class="text-muted">N/A</span>
+              {% endif %}
+            </td>
+            <td>
+              {{ transfer[3].strftime('%m/%d/%Y') if transfer[3] else 'N/A' }}
+              <br><small class="text-muted">{{ transfer[3].strftime('%I:%M %p') if transfer[3] else '' }}</small>
+            </td>
+            <td>
+              <span class="badge bg-{% if transfer[4] == 'Completed' %}success{% elif transfer[4] == 'Initiated' %}warning{% else %}secondary{% endif %}">
+                {{ transfer[4] }}
+              </span>
+            </td>
+            <td>{{ transfer[5] or 'System' }}</td>
+            {% if session.user_role in ['executor', 'admin'] %}
+            <td>
+              {% if transfer[4] == 'Initiated' %}
+              <button class="btn btn-sm btn-success" onclick="completeTransfer({{ transfer[0] }})" title="Mark as Completed">
+                <i class="fas fa-check"></i>
+              </button>
+              {% endif %}
+              <button class="btn btn-sm btn-outline-info" onclick="viewTransferDetails({{ transfer[0] }})" title="View Details">
+                <i class="fas fa-eye"></i>
+              </button>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Transfer Statistics -->
+<div class="row mt-4">
+  <div class="col-md-3">
+    <div class="stat-card">
+      <h3>{{ transfers|length }}</h3>
+      <p>Total Transfers</p>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card" style="background: linear-gradient(135deg, #f39c12, #d68910);">
+      <h3>{{ transfers|selectattr('4', 'equalto', 'Initiated')|list|length }}</h3>
+      <p>Pending</p>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card" style="background: linear-gradient(135deg, #27ae60, #229954);">
+      <h3>{{ transfers|selectattr('4', 'equalto', 'Completed')|list|length }}</h3>
+      <p>Completed</p>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card" style="background: linear-gradient(135deg, #16a085, #138d75);">
+      <h3>${{ "{:,.0f}".format(transfers|sum(attribute=9) or 0) }}</h3>
+      <p>Total Value</p>
+    </div>
+  </div>
+</div>
+
+{% else %}
+<div class="text-center py-5">
+  <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+  <h3 class="text-muted">No Transfers Found</h3>
+  <p class="text-muted">
+    {% if session.user_role == 'executor' %}
+      No asset transfers have been assigned to you yet.
+    {% else %}
+      No asset transfers have been initiated yet.
+    {% endif %}
+  </p>
+</div>
+{% endif %}
+
+<script>
+function completeTransfer(transferId) {
+  if (confirm('Mark this transfer as completed?')) {
+    // In a real implementation, you'd make an API call here
+    alert('Transfer completion feature - to be implemented');
+  }
+}
+
+function viewTransferDetails(transferId) {
+  alert('View transfer details - Feature coming soon!');
+}
+
+function refreshTransfers() {
+  window.location.reload();
+}
+</script>
+{% endblock %>">
+  <i class="fas fa-scroll fa-3x text-muted mb-3"></i>
+  <h3 class="text-muted">No Wills Found</h3>
+  <p class="text-muted">
+    {% if session.user_role == 'testator' %}
+      You haven't created any wills yet.
+    {% else %}
+      No wills have been assigned to you yet.
+    {% endif %}
+  </p>
+  {% if session.user_role == 'testator' %}
+  <a href="{{ url_for('create_will') }}" class="btn btn-primary">
+    <i class="fas fa-plus"></i> Create Your First Will
+  </a>
+  {% endif %}
+</div>
+{% endif %}
+
+<script>
+function approveWill(willId) {
+  if (confirm('Are you sure you want to approve this will? This action cannot be undone.')) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/wills/${willId}/approve`;
+    document.body.appendChild(form);
+    form.submit();
+  }
+}
+</script>
+{% endblock %}

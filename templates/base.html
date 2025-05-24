@@ -264,5 +264,249 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
     {% block extra_js %}{% endblock %}
+    <!-- Additional JavaScript Functions for Enhanced Functionality -->
+<!-- Add this script section before closing body tag in base.html -->
+<script>
+// Global JavaScript functions for enhanced functionality
+
+// Auto-hide flash messages after 5 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(function(alert) {
+        if (!alert.classList.contains('alert-permanent')) {
+            setTimeout(function() {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            }, 5000);
+        }
+    });
+});
+
+// Confirmation dialogs for delete actions
+function confirmDelete(message) {
+    return confirm(message || 'Are you sure you want to delete this item?');
+}
+
+// Format currency display
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+    }).format(amount);
+}
+
+// Validate form inputs
+function validateRequired(formId) {
+    const form = document.getElementById(formId);
+    const requiredInputs = form.querySelectorAll('[required]');
+    let isValid = true;
+    
+    requiredInputs.forEach(function(input) {
+        if (!input.value.trim()) {
+            input.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            input.classList.remove('is-invalid');
+        }
+    });
+    
+    return isValid;
+}
+
+// Show loading spinner on form submission
+function showLoading(buttonId) {
+    const button = document.getElementById(buttonId);
+    if (button) {
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Loading...';
+        button.disabled = true;
+    }
+}
+
+// AJAX helper function
+function makeAjaxRequest(url, method, data, successCallback, errorCallback) {
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: data ? JSON.stringify(data) : null
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (successCallback) successCallback(data);
+    })
+    .catch(error => {
+        if (errorCallback) errorCallback(error);
+        else console.error('Error:', error);
+    });
+}
+
+// Toast notification function
+function showToast(message, type = 'info') {
+    const toastContainer = document.getElementById('toastContainer') || createToastContainer();
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type} border-0`;
+    toast.role = 'alert';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    toastContainer.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+    document.body.appendChild(container);
+    return container;
+}
+
+// Local storage helpers (for temporary data only)
+function saveToLocal(key, data) {
+    try {
+        localStorage.setItem(key, JSON.stringify(data));
+    } catch (e) {
+        console.warn('localStorage not available');
+    }
+}
+
+function getFromLocal(key) {
+    try {
+        const data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : null;
+    } catch (e) {
+        console.warn('localStorage not available');
+        return null;
+    }
+}
+</script>
+
+<!-- Additional CSS for enhanced styling -->
+<style>
+/* Additional utility classes */
+.cursor-pointer { cursor: pointer; }
+.text-truncate-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+
+/* Enhanced form styling */
+.form-control.is-invalid {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+/* Loading state for buttons */
+.btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* Enhanced card hover effects */
+.card-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    transition: all 0.3s ease;
+}
+
+/* Status indicator dots */
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+.status-dot.draft { background-color: #6c757d; }
+.status-dot.approved { background-color: #3498db; }
+.status-dot.executing { background-color: #f39c12; }
+.status-dot.executed { background-color: #27ae60; }
+
+/* Progress bars with animation */
+.progress .progress-bar {
+    transition: width 0.6s ease;
+}
+
+/* Enhanced modal styling */
+.modal-content {
+    border-radius: 10px;
+    border: none;
+}
+
+/* Toast container positioning */
+.toast-container {
+    z-index: 1055;
+}
+
+/* Enhanced table responsiveness */
+@media (max-width: 768px) {
+    .table-responsive table,
+    .table-responsive thead,
+    .table-responsive tbody,
+    .table-responsive th,
+    .table-responsive td,
+    .table-responsive tr {
+        display: block;
+    }
+    
+    .table-responsive thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+    
+    .table-responsive tr {
+        border: 1px solid #ccc;
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 5px;
+    }
+    
+    .table-responsive td {
+        border: none;
+        position: relative;
+        padding-left: 50% !important;
+        text-align: left;
+    }
+    
+    .table-responsive td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 6px;
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
+        font-weight: bold;
+    }
+}
+
+/* Print optimizations */
+@media print {
+    .no-print,
+    .navbar,
+    .btn,
+    .modal,
+    .toast-container {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #dee2e6 !important;
+        box-shadow: none !important;
+    }
+    
+    .page-break {
+        page-break-before: always;
+    }
+}
+</style>
 </body>
 </html>

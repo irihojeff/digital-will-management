@@ -1,0 +1,123 @@
+<!-- Add Executor Template -->
+<!-- templates/executors/add.html -->
+{% extends "base.html" %}
+
+{% block title %}Add Executor - Digital Will Management System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <h4><i class="fas fa-user-tie"></i> Add Executor</h4>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('add_executor', will_id=will_id) }}">
+          <div class="mb-3">
+            <label for="full_name" class="form-label">Full Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="full_name" name="full_name" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" id="email" name="email" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="phone_number" class="form-label">Phone Number</label>
+            <input type="tel" class="form-control" id="phone_number" name="phone_number">
+          </div>
+
+          <div class="mb-4">
+            <label for="relation" class="form-label">Relationship</label>
+            <select class="form-select" id="relation" name="relation">
+              <option value="">Select relationship...</option>
+              <option value="Family Lawyer">Family Lawyer</option>
+              <option value="Friend">Friend</option>
+              <option value="Family Member">Family Member</option>
+              <option value="Financial Advisor">Financial Advisor</option>
+              <option value="Other Professional">Other Professional</option>
+            </select>
+          </div>
+
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            The first executor you add will automatically be set as the primary executor.
+          </div>
+
+          <div class="d-flex justify-content-between">
+            <a href="{{ url_for('view_will', will_id=will_id) }}" class="btn btn-secondary">
+              <i class="fas fa-arrow-left"></i> Cancel
+            </a>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i> Add Executor
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+<!-- Document Upload Template -->
+<!-- templates/documents/upload.html -->
+{% extends "base.html" %}
+
+{% block title %}Upload Document - Digital Will Management System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">
+        <h4><i class="fas fa-file-upload"></i> Upload Document</h4>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-info">
+          <i class="fas fa-info-circle"></i>
+          Uploading document for <strong>{{ entity_type.title() }} ID: {{ entity_id }}</strong>
+        </div>
+
+        <form method="POST" action="{{ url_for('upload_document', entity_type=entity_type, entity_id=entity_id) }}" enctype="multipart/form-data">
+          <div class="mb-3">
+            <label for="title" class="form-label">Document Title <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="title" name="title" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label for="file_type" class="form-label">File Type</label>
+            <select class="form-select" id="file_type" name="file_type">
+              <option value="PDF">PDF</option>
+              <option value="DOC">Word Document</option>
+              <option value="JPG">Image (JPG)</option>
+              <option value="PNG">Image (PNG)</option>
+              <option value="TXT">Text File</option>
+            </select>
+          </div>
+
+          <div class="mb-4">
+            <label for="file" class="form-label">Select File</label>
+            <input type="file" class="form-control" id="file" name="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt">
+            <div class="form-text">Maximum file size: 10MB</div>
+          </div>
+
+          <div class="d-flex justify-content-between">
+            <a href="javascript:history.back()" class="btn btn-secondary">
+              <i class="fas fa-arrow-left"></i> Cancel
+            </a>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-upload"></i> Upload Document
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

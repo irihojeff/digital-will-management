@@ -1,58 +1,291 @@
+<!-- View Will Template -->
+<!-- templates/wills/view.html -->
 {% extends "base.html" %}
 
-{% block title %}{{ will[2] if will else 'Will Details' }} - Digital Will Management System{% endblock %}
+{% block title %}{{ will[1] if will else 'Will' }} - Digital Will Management System{% endblock %}
 
 {% block content %}
 {% if will %}
-<div class="row mb-4">
-    <div class="col">
-        <h1>{{ will[2] }}</h1>
-        <p class="text-muted">Created by: {{ will[7] }}</p>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1>{{ will[1] }}</h1>
+    <p class="text-muted mb-0">Created by: {{ will[7] if will|length > 7 else 'Unknown' }}</p>
+  </div>
+  <div class="text-end">
+    <span class="badge bg-{% if will[3] == 'Draft' %}secondary{% elif will[3] == 'Approved' %}primary{% elif will[3] == 'Executing' %}warning{% else %}success{% endif %} fs-6 mb-2">
+      {{ will[3] }}
+    </span>
+    <div class="btn-group">
+      {% if session.user_role == 'testator' and will[3] == 'Draft' %}
+      <form method="POST" action="{{ url_for('approve_will', will_id=will[0]) }}" style="display: inline;">
+        <button type="submit" class="btn btn-success" onclick="return confirm('Approve this will?')">
+          <i class="fas fa-check"></i> Approve
+        </button>
+      </form>
+      {% endif %}
+      <a href="{{ url_for('will_summary_report', will_id=will[0]) }}" class="btn btn-info">
+        <i class="fas fa-file-alt"></i> Generate Report
+      </a>
     </div>
-    <div class="col-auto">
-        <a href="{{ url_for('list_wills') }}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Back to List
-        </a>
-    </div>
+  </div>
 </div>
 
-<!-- Will Status and Actions -->
-<div class="card mb-4">
-    <div class="card-body">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <h5>Status: 
-                    {% if will[4] == 'Draft' %}
-                        <span class="badge bg-secondary">Draft</span>
-                    {% elif will[4] == 'Approved' %}
-                        <span class="badge bg-primary">Approved</span>
-                    {% elif will[4] == 'Executing' %}
-                        <span class="badge bg-warning text-dark">Executing</span>
-                    {% elif will[4] == 'Executed' %}
-                        <span class="badge bg-success">Executed</span>
-                    {% endif %}
-                </h5>
-                <p class="mb-0">{{ will[3] }}</p>
-            </div>
-            <div class="col-md-4 text-end">
-                {% if will[4] == 'Draft' and session.user_role == 'testator' %}
-                    <form method="POST" action="{{ url_for('approve_will', will_id=will[0]) }}" style="display: inline;">
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-check"></i> Submit for Approval
-                        </button>
-                    </form>
-                {% endif %}
-            </div>
-        </div>
+<div class="row">
+  <!-- Will Details -->
+  <div class="col-lg-8">
+    <!-- Description -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5><i class="fas fa-info-circle"></i> Description</h5>
+      </div>
+      <div class="card-body">
+        <p>{{ will[2] or 'No description provided' }}</p>
+        <small class="text-muted">
+          Created: {{ will[4].strftime('%B %d, %Y at %I:%M %p') if will[4] else 'Unknown' }} | 
+          Last Updated: {{ will[5].strftime('%B %d, %Y at %I:%M %p') if will[5] else 'Never' }}
+        </small>
+      </div>
     </div>
-</div>
 
-<!-- Assets Section -->
-<div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="fas fa-coins"></i> Assets</h5>
-        {% if will[4] == 'Draft' and session.user_role == 'testator' %}
+    <!-- Assets -->
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5><i class="fas fa-coins"></i> Assets ({{ assets|length }})</h5>
+        {% if session.user_role == 'testator' and will[3] in ['Draft', 'Approved'] %}
         <a href="{{ url_for('add_asset', will_id=will[0]) }}" class="btn btn-sm btn-primary">
-            <i class="fas fa-plus"></i> Add Asset
+          <i class="fas fa-plus"></i> Add Asset
         </a>
         {% endif %}
+      </div>
+      <div class="card-body">
+        {% if assets %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Asset</th>
+                <th>Type</th>
+                <th>Value</th>
+                <th>Allocated</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for asset in assets %}
+              <tr>
+                <td>
+                  <strong>{{ asset[1] }}</strong>
+                  <br><small class="text-muted">{{ asset[2] or 'No description' }}</small>
+                </td>
+                <td>
+                  <span class="badge bg-secondary">{{ asset[3] }}</span>
+                </td>
+                <td>${{ "{:,.2f}".format(asset[4] or 0) }}</td>
+                <td>
+                  <div class="progress" style="height: 20px;">
+                    <div class="progress-bar bg-{% if asset[6] >= 100 %}success{% elif asset[6] >= 80 %}warning{% else %}danger{% endif %}" 
+                         style="width: {{ asset[6] or 0 }}%">
+                      {{ "{:.1f}".format(asset[6] or 0) }}%
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  {% if session.user_role == 'testator' and will[3] in ['Draft', 'Approved'] %}
+                  <a href="{{ url_for('assign_asset', asset_id=asset[0]) }}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-user-plus"></i> Assign
+                  </a>
+                  {% endif %}
+                  {% if session.user_role in ['executor', 'admin'] and will[3] in ['Approved', 'Executing'] %}
+                  <button class="btn btn-sm btn-outline-success" onclick="initiateTransfer({{ asset[0] }})">
+                    <i class="fas fa-exchange-alt"></i> Transfer
+                  </button>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-3">
+          <i class="fas fa-coins fa-2x text-muted mb-2"></i>
+          <p class="text-muted">No assets added yet</p>
+          {% if session.user_role == 'testator' %}
+          <a href="{{ url_for('add_asset', will_id=will[0]) }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add First Asset
+          </a>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Asset Allocations -->
+    {% if allocations %}
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5><i class="fas fa-users"></i> Asset Allocations</h5>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Asset</th>
+                <th>Beneficiary</th>
+                <th>Share</th>
+                <th>Est. Value</th>
+                <th>Conditions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for allocation in allocations %}
+              <tr>
+                <td>{{ allocation[0] }}</td>
+                <td>{{ allocation[1] }}</td>
+                <td>{{ allocation[2] }}%</td>
+                <td>${{ "{:,.2f}".format(allocation[4] or 0) }}</td>
+                <td>{{ allocation[3] or 'None' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Sidebar -->
+  <div class="col-lg-4">
+    <!-- Executors -->
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5><i class="fas fa-user-tie"></i> Executors</h5>
+        {% if session.user_role == 'testator' and will[3] in ['Draft'] %}
+        <a href="{{ url_for('add_executor', will_id=will[0]) }}" class="btn btn-sm btn-primary">
+          <i class="fas fa-plus"></i> Add
+        </a>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        {% if executors %}
+        {% for executor in executors %}
+        <div class="d-flex justify-content-between align-items-center mb-2 p-2 {% if executor[5] == 'Y' %}bg-light rounded{% endif %}">
+          <div>
+            <strong>{{ executor[1] }}</strong>
+            {% if executor[5] == 'Y' %}<small class="badge bg-primary ms-1">Primary</small>{% endif %}
+            <br><small class="text-muted">{{ executor[2] }}</small>
+          </div>
+          {% if session.user_role == 'testator' and executor[5] != 'Y' %}
+          <form method="POST" action="{{ url_for('set_primary_executor', executor_id=executor[0]) }}" style="display: inline;">
+            <button class="btn btn-sm btn-outline-primary" title="Set as Primary">
+              <i class="fas fa-star"></i>
+            </button>
+          </form>
+          {% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="text-muted text-center">No executors assigned</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="card">
+      <div class="card-header">
+        <h5><i class="fas fa-chart-bar"></i> Quick Stats</h5>
+      </div>
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-6 mb-2">
+            <div class="h4 text-primary">{{ assets|length }}</div>
+            <small class="text-muted">Assets</small>
+          </div>
+          <div class="col-6 mb-2">
+            <div class="h4 text-success">{{ executors|length }}</div>
+            <small class="text-muted">Executors</small>
+          </div>
+        </div>
+        {% if assets %}
+        <div class="mt-3">
+          <small class="text-muted">Total Asset Value:</small>
+          <div class="h5 text-info">
+            ${{ "{:,.2f}".format(assets|sum(attribute=4) or 0) }}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Transfer Modal -->
+<div class="modal fade" id="transferModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Initiate Asset Transfer</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="transferForm" method="POST" action="{{ url_for('initiate_transfer') }}">
+          <input type="hidden" id="transferAssetId" name="asset_id">
+          <div class="mb-3">
+            <label class="form-label">Select Beneficiary:</label>
+            <select class="form-select" name="beneficiary_id" required>
+              <option value="">Choose beneficiary...</option>
+            </select>
+          </div>
+          <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            This will initiate the transfer process. Make sure all conditions are met.
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" form="transferForm" class="btn btn-success">Initiate Transfer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function initiateTransfer(assetId) {
+  // Load beneficiaries for this asset
+  fetch(`/api/transfer-form/${assetId}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.error) {
+        alert('Error: ' + data.error);
+        return;
+      }
+      
+      document.getElementById('transferAssetId').value = assetId;
+      const select = document.querySelector('#transferForm select[name="beneficiary_id"]');
+      select.innerHTML = '<option value="">Choose beneficiary...</option>';
+      
+      data.beneficiaries.forEach(ben => {
+        const option = document.createElement('option');
+        option.value = ben.id;
+        option.textContent = `${ben.name} (${ben.share_percent}% share)`;
+        select.appendChild(option);
+      });
+      
+      new bootstrap.Modal(document.getElementById('transferModal')).show();
+    })
+    .catch(error => {
+      alert('Error loading transfer data: ' + error);
+    });
+}
+</script>
+
+{% else %}
+<div class="text-center py-5 + estimatedValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  
+  document.getElementById('valuePreview').style.display = sharePercent > 0 ? 'block' : 'none';
+});
+</script>
+{% endblock %}

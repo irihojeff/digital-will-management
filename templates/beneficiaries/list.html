@@ -1,268 +1,160 @@
+<!-- Beneficiaries List Template -->
+<!-- templates/beneficiaries/list.html -->
 {% extends "base.html" %}
 
-{% block title %}Manage Beneficiaries - Digital Will Management System{% endblock %}
+{% block title %}Beneficiaries - Digital Will Management System{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col">
-        <h1>Manage Beneficiaries</h1>
-        <p class="text-muted">Add and manage beneficiaries who can be assigned to your assets</p>
-    </div>
-    <div class="col-auto">
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBeneficiaryModal">
-            <i class="fas fa-user-plus"></i> Add Beneficiary
-        </button>
-    </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1><i class="fas fa-users"></i> Manage Beneficiaries</h1>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBeneficiaryModal">
+    <i class="fas fa-user-plus"></i> Add Beneficiary
+  </button>
 </div>
 
-<!-- Beneficiaries List -->
+{% if beneficiaries %}
 <div class="card">
-    <div class="card-body">
-        {% if beneficiaries %}
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Relation</th>
-                        <th>Contact</th>
-                        <th>Assets Assigned</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for beneficiary in beneficiaries %}
-                    <tr>
-                        <td>
-                            <strong>{{ beneficiary[1] }}</strong>
-                        </td>
-                        <td>{{ beneficiary[2] }}</td>
-                        <td>
-                            <small>
-                                <i class="fas fa-envelope"></i> {{ beneficiary[3] if beneficiary[3] else "No email" }}<br>
-                                <i class="fas fa-phone"></i> {{ beneficiary[4] if beneficiary[4] else "No phone" }}
-                            </small>
-                        </td>
-                        <td>
-                            <span class="badge bg-info">0 Assets</span>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary" 
-                                    onclick="viewBeneficiary({{ beneficiary[0] }})" title="View Details">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-secondary" 
-                                    onclick="editBeneficiary({{ beneficiary[0] }})" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="text-center py-5">
-            <i class="fas fa-users fa-3x text-muted mb-3"></i>
-            <p class="text-muted">No beneficiaries added yet.</p>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBeneficiaryModal">
-                <i class="fas fa-user-plus"></i> Add Your First Beneficiary
-            </button>
-        </div>
-        {% endif %}
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Relationship</th>
+            <th>Contact</th>
+            <th>Assets Assigned</th>
+            <th>Total Inheritance</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for beneficiary in beneficiaries %}
+          <tr>
+            <td>
+              <strong>{{ beneficiary[1] }}</strong>
+              <br><small class="text-muted">ID: {{ beneficiary[0] }}</small>
+            </td>
+            <td>
+              <span class="badge bg-info">{{ beneficiary[2] }}</span>
+            </td>
+            <td>
+              {% if beneficiary[3] %}
+                <div><i class="fas fa-envelope"></i> {{ beneficiary[3] }}</div>
+              {% endif %}
+              {% if beneficiary[4] %}
+                <div><i class="fas fa-phone"></i> {{ beneficiary[4] }}</div>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge bg-secondary">{{ beneficiary[5] or 0 }} assets</span>
+            </td>
+            <td>
+              <strong class="text-success">${{ "{:,.2f}".format(beneficiary[6] or 0) }}</strong>
+            </td>
+            <td>
+              <div class="btn-group" role="group">
+                <button class="btn btn-sm btn-outline-primary" onclick="viewBeneficiary({{ beneficiary[0] }})" title="View Details">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="editBeneficiary({{ beneficiary[0] }})" title="Edit">
+                  <i class="fas fa-edit"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
+  </div>
 </div>
+{% else %}
+<div class="text-center py-5">
+  <i class="fas fa-users fa-3x text-muted mb-3"></i>
+  <h3 class="text-muted">No Beneficiaries Found</h3>
+  <p class="text-muted">Start by adding beneficiaries who will inherit your assets.</p>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBeneficiaryModal">
+    <i class="fas fa-user-plus"></i> Add Your First Beneficiary
+  </button>
+</div>
+{% endif %}
 
 <!-- Add Beneficiary Modal -->
 <div class="modal fade" id="addBeneficiaryModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add New Beneficiary</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-user-plus"></i> Add New Beneficiary</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('manage_beneficiaries') }}">
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="full_name" class="form-label">Full Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="full_name" name="full_name" required>
             </div>
-            <form method="POST" action="{{ url_for('manage_beneficiaries') }}" id="addBeneficiaryForm">
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="full_name" class="form-label">Full Name <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="full_name" name="full_name" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="relation" class="form-label">Relation <span class="text-danger">*</span></label>
-                            <select class="form-select" id="relation" name="relation" required>
-                                <option value="">Select relation...</option>
-                                <option value="Spouse">Spouse</option>
-                                <option value="Child">Child</option>
-                                <option value="Parent">Parent</option>
-                                <option value="Sibling">Sibling</option>
-                                <option value="Grandchild">Grandchild</option>
-                                <option value="Friend">Friend</option>
-                                <option value="Charity">Charity/Organization</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="email" class="form-label">Email Address</label>
-                            <input type="email" class="form-control" id="email" name="email">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="phone" class="form-label">Phone Number</label>
-                            <input type="tel" class="form-control" id="phone" name="phone" 
-                                   placeholder="+250 XXX XXX XXX">
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="dob" class="form-label">Date of Birth</label>
-                            <input type="date" class="form-control" id="dob" name="dob">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="identification" class="form-label">ID/Passport Number</label>
-                            <input type="text" class="form-control" id="identification" name="identification">
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="address" class="form-label">Address</label>
-                        <textarea class="form-control" id="address" name="address" rows="2"></textarea>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="notes" class="form-label">Additional Notes</label>
-                        <textarea class="form-control" id="notes" name="notes" rows="2" 
-                                  placeholder="Any special considerations or instructions"></textarea>
-                    </div>
-                    
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i> 
-                        <strong>Important:</strong> Ensure beneficiary information is accurate. 
-                        They will be notified when the will is executed.
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Add Beneficiary
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+            <div class="col-md-6 mb-3">
+              <label for="relation" class="form-label">Relationship <span class="text-danger">*</span></label>
+              <select class="form-select" id="relation" name="relation" required>
+                <option value="">Select relationship...</option>
+                <option value="Spouse">Spouse</option>
+                <option value="Child">Child</option>
+                <option value="Parent">Parent</option>
+                <option value="Sibling">Sibling</option>
+                <option value="Friend">Friend</option>
+                <option value="Charity">Charity/Organization</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
 
-<!-- View Beneficiary Modal -->
-<div class="modal fade" id="viewBeneficiaryModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Beneficiary Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="email" class="form-label">Email Address</label>
+              <input type="email" class="form-control" id="email" name="email">
             </div>
-            <div class="modal-body" id="beneficiaryDetails">
-                <!-- Details will be loaded here -->
+            <div class="col-md-6 mb-3">
+              <label for="phone" class="form-label">Phone Number</label>
+              <input type="tel" class="form-control" id="phone" name="phone">
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="dob" class="form-label">Date of Birth</label>
+              <input type="date" class="form-control" id="dob" name="dob">
             </div>
+            <div class="col-md-6 mb-3">
+              <label for="address" class="form-label">Address</label>
+              <input type="text" class="form-control" id="address" name="address">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="notes" class="form-label">Notes</label>
+            <textarea class="form-control" id="notes" name="notes" rows="3" 
+                      placeholder="Any additional information about this beneficiary..."></textarea>
+          </div>
         </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Add Beneficiary
+          </button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 
 <script>
-// Form validation
-document.getElementById('addBeneficiaryForm').addEventListener('submit', function(e) {
-    const fullName = document.getElementById('full_name').value.trim();
-    const relation = document.getElementById('relation').value;
-    
-    if (fullName.length < 3) {
-        e.preventDefault();
-        alert('Full name must be at least 3 characters long');
-        return false;
-    }
-    
-    if (!relation) {
-        e.preventDefault();
-        alert('Please select a relation');
-        return false;
-    }
-    
-    // Validate email if provided
-    const email = document.getElementById('email').value.trim();
-    if (email && !isValidEmail(email)) {
-        e.preventDefault();
-        alert('Please enter a valid email address');
-        return false;
-    }
-    
-    // Validate phone if provided
-    const phone = document.getElementById('phone').value.trim();
-    if (phone && !isValidPhone(phone)) {
-        e.preventDefault();
-        alert('Please enter a valid phone number');
-        return false;
-    }
-});
-
-function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-}
-
-function isValidPhone(phone) {
-    // Remove all non-digits
-    const cleaned = phone.replace(/\D/g, '');
-    // Check if it's a valid Rwanda phone number (9 digits after country code)
-    return cleaned.length >= 9 && cleaned.length <= 12;
-}
-
 function viewBeneficiary(id) {
-    // In a real application, this would fetch beneficiary details via AJAX
-    const modal = new bootstrap.Modal(document.getElementById('viewBeneficiaryModal'));
-    document.getElementById('beneficiaryDetails').innerHTML = `
-        <p><strong>Name:</strong> John Doe</p>
-        <p><strong>Relation:</strong> Son</p>
-        <p><strong>Email:</strong> john.doe@example.com</p>
-        <p><strong>Phone:</strong> +250 788 123 456</p>
-        <p><strong>Address:</strong> Kigali, Rwanda</p>
-        <p><strong>Notes:</strong> Primary beneficiary for financial assets</p>
-    `;
-    modal.show();
+  alert('View beneficiary details - Feature coming soon!');
 }
 
 function editBeneficiary(id) {
-    // In a real application, this would load the edit form
-    alert('Edit functionality would be implemented here for beneficiary ID: ' + id);
+  alert('Edit beneficiary - Feature coming soon!');
 }
-
-// Phone number formatting
-document.getElementById('phone').addEventListener('input', function(e) {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.startsWith('250')) {
-        value = value.substring(0, 12);
-    }
-    e.target.value = value;
-});
-
-// Age validation for date of birth
-document.getElementById('dob').addEventListener('change', function() {
-    const birthDate = new Date(this.value);
-    const today = new Date();
-    const age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-    }
-    
-    if (age > 120) {
-        alert('Please enter a valid date of birth');
-        this.value = '';
-    }
-});
 </script>
 {% endblock %}
