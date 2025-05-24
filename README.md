@@ -9,7 +9,7 @@
 **Institution:** Adventist University of Central Africa (AUCA)  
 **Academic Year:** 2024-2025  
 **Group:** Tuesday Group  
-**Student:** Japhet (Student ID: 27066)  
+**Student:** IDUKUNDIRIHO Japhet (Student ID: 27066)  
 **Database Name:** `tues_27066_japhet_digitalwill_db`  
 **Lecturer:** Eric Maniraguha
 
@@ -404,10 +404,10 @@ END;
 
 ## 📞 Contact Information
 
-**Student:** Japhet  
+**Student:** IDUKUNDIRIHO Japhet  
 **Student ID:** 27066  
-**Email:** [student_email@auca.ac.rw]  
-**GitHub:** [repository_link]  
+**Email:** idukundiriho.japhet@auca.ac.rw  
+**GitHub:** https://github.com/irihojeff/digital-will-management.git 
 **Project Database:** `tues_27066_japhet_digitalwill_db`
 
 ---
