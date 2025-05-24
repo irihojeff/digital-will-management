@@ -61,7 +61,7 @@ The Digital Will Management System addresses the critical need for secure, trans
 ![Digital Will Management System - Use Case Diagram](screenshots/use_case_diagram.png)
 
 
-*Recommended UML Diagram: **Use Case Diagram** showing interactions between different user roles (Testator, Executor, Beneficiary, Admin) and system functionalities.*
+*UML Diagram: **Use Case Diagram** showing interactions between different user roles (Testator, Executor, Beneficiary, Admin) and system functionalities.*
 
 **Key Use Cases:**
 - Testator: Create Will, Add Assets, Assign Beneficiaries, Approve Will
