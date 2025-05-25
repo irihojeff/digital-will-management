@@ -443,31 +443,4 @@ END;
 
 ---
 
-## 📄 Project Files Structure
-
-```
-📦 digital-will-management-system
-├── 📁 database/
-│   ├── schema_tue_27066_japhet_digitalwill_db.sql
-│   ├── triggers_tue_27066_japhet_digitalwill_db.sql  
-│   ├── procedures_tue_27066_japhet_digitalwill_db.sql
-│   └── sample_data_digitalwill.sql
-├── 📁 web-app/
-│   ├── app.py
-│   ├── config.py
-│   ├── 📁 templates/
-│   ├── 📁 static/
-│   └── 📁 database/
-├── 📁 documentation/
-│   ├── README.md
-│   ├── 📁 screenshots/
-│   ├── 📁 diagrams/
-│   └── presentation.pptx
-└── 📁 testing/
-    ├── test_queries.sql
-    └── validation_results.md
-```
-
----
-
 *This project represents a comprehensive implementation of advanced PL/SQL programming concepts applied to solve real-world estate management challenges, demonstrating proficiency in database design, stored procedures, triggers, packages, and web application integration.*
