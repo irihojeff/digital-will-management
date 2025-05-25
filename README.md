@@ -49,17 +49,13 @@ The Digital Will Management System addresses the critical need for secure, trans
 
 ### 📊 Entity Relationship Diagram (ERD)
 
-```
-[Insert ERD Screenshot Here]
-```
+![Digital Will Management System - ERD](screenshots/erd_diagram.png)
 
 *The ERD demonstrates the comprehensive relationship structure between Users, Wills, Assets, Beneficiaries, Executors, and supporting entities with proper normalization (3NF compliance).*
 
 ### 🔄 UML Use Case Diagram
 
-```
-[Insert Use Case Diagram Screenshot Here]
-```
+![Digital Will Management System - Use Case Diagram](screenshots/use_case_diagram.png)
 
 *Recommended UML Diagram: **Use Case Diagram** showing interactions between different user roles (Testator, Executor, Beneficiary, Admin) and system functionalities.*
 
