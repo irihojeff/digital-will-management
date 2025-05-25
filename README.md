@@ -115,68 +115,11 @@ This business process model exemplifies effective MIS implementation by transfor
 
 ## ⚙️ PL/SQL Implementation
 
-### 🔧 Stored Procedures
+![Digital Will Management System - Business Process Flow](screenshots/create.png)
+![Digital Will Management System - Business Process Flow](screenshots/inter.png)
+![Digital Will Management System - Business Process Flow](screenshots/proced.png)
 
-#### 1. `assign_asset_to_beneficiary`
-```sql
--- Purpose: Assigns beneficiaries to assets with share percentage validation
--- Validates: Asset existence, beneficiary existence, will status, share limits
-[Insert Procedure Screenshot Here]
-```
 
-#### 2. `approve_will`  
-```sql
--- Purpose: Approves wills after validating executor and allocation requirements
--- Business Logic: Ensures completeness before approval
-[Insert Procedure Screenshot Here]
-```
-
-#### 3. `transfer_asset`
-```sql
--- Purpose: Initiates asset transfers with weekend/holiday restrictions
--- Features: Automated status updates, audit logging
-[Insert Procedure Screenshot Here]
-```
-
-#### 4. `delete_draft_will`
-```sql
--- Purpose: Safely removes draft wills and related data
--- Security: Prevents deletion of approved/executed wills
-[Insert Procedure Screenshot Here]
-```
-
-### ⚡ Triggers Implementation
-
-#### 1. Weekend/Holiday Transfer Blocking
-```sql
--- Trigger: trg_block_weekend_holiday_transfer
--- Purpose: Enforces business hours and holiday restrictions
-[Insert Trigger Execution Screenshot Here]
-```
-
-#### 2. Asset Share Validation
-```sql
--- Trigger: trg_check_asset_share_percent  
--- Purpose: Prevents over-allocation of assets (>100%)
-[Insert Trigger Validation Screenshot Here]
-```
-
-#### 3. Will Status Change Logging
-```sql
--- Trigger: trg_status_change_log
--- Purpose: Maintains complete audit trail of will status changes
-[Insert Status History Screenshot Here]
-```
-
-### 📦 Packages
-
-#### Will Management Package
-```sql
--- Package: WILL_MANAGEMENT_PKG
--- Contains: Will lifecycle procedures and validation functions
--- Purpose: Modular organization of will-related operations
-[Insert Package Screenshot Here]
-```
 
 ---
 
