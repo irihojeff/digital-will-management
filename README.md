@@ -1,385 +1,116 @@
-# Digital Will Management System
-## PL/SQL Oracle Database Capstone Project
+# 📜 Digital Will Management System
+
+## Overview
+
+The **Digital Will Management System** is a comprehensive **PL/SQL Oracle Database + Flask web application** developed to automate will creation, approval, execution, and estate distribution in Rwanda. It demonstrates advanced **database design, PL/SQL programming, and Python web development** while addressing security, transparency, and efficiency challenges in estate management.
 
 ---
 
-## 📋 Project Information
+## 🎯 Features
 
-**Course:** Database Development with PL/SQL (INSY 8311)  
-**Institution:** Adventist University of Central Africa (AUCA)  
-**Academic Year:** 2024-2025  
-**Group:** Tuesday Group  
-**Student:**  Idukundiriho Japhet (Student ID: 27066)  
-**Database Name:** `tues_27066_japhet_digitalwill_db`  
-**Lecturer:** Eric Maniraguha
-
----
-
-## 🎯 Problem Statement
-
-The Digital Will Management System addresses the critical need for secure, transparent, and efficient management of wills and estate distribution in Rwanda. Traditional paper-based will management systems suffer from issues including:
-
-- **Security vulnerabilities** in document storage and access control
-- **Lack of transparency** in asset allocation and transfer processes  
-- **Manual processing delays** during estate execution
-- **Limited audit trails** for legal compliance
-- **Complex beneficiary management** across multiple assets
-
-### 🌍 Context & Target Users
-
-**Context:** Legal firms, estate planning services, and family asset management in Rwanda
-
-**Target Users:**
-- **Testators:** Individuals creating and managing their wills
-- **Executors:** Legal representatives managing will execution
-- **Beneficiaries:** Recipients tracking their inheritance status
-- **System Administrators:** Managing overall system operations
-
-### 🎯 Project Goals
-
-- Automate will creation, approval, and execution workflows
-- Implement robust security measures with role-based access control
-- Provide real-time asset allocation tracking and validation
-- Enable transparent transfer management with audit trails
-- Enforce business rules through advanced PL/SQL programming
+✅ Automated will lifecycle workflows (creation, approval, execution)
+✅ Role-based access control for testators, executors, beneficiaries, and admins
+✅ Real-time asset allocation validation
+✅ Transfer management with weekend/holiday blocking
+✅ Full audit logging for legal compliance
+✅ Responsive, user-friendly web interface
 
 ---
 
-## 🏗️ System Architecture
+## 🗄️ Technologies
 
-### 📊 Entity Relationship Diagram (ERD)
-
-![Digital Will Management System - ERD](screenshots/erd_diagram.png)
-
-*The ERD demonstrates the comprehensive relationship structure between Users, Wills, Assets, Beneficiaries, Executors, and supporting entities with proper normalization (3NF compliance).*
-
-### 🔄 UML Use Case Diagram
-
-![Digital Will Management System - Use Case Diagram](screenshots/use_case_diagram.png)
-
-*Recommended UML Diagram: **Use Case Diagram** showing interactions between different user roles (Testator, Executor, Beneficiary, Admin) and system functionalities.*
-
-**Key Use Cases:**
-- Testator: Create Will, Add Assets, Assign Beneficiaries, Approve Will
-- Executor: Manage Transfers, Execute Will Instructions, Generate Reports  
-- Beneficiary: View Inherited Assets, Track Transfer Status
-- Admin: System Monitoring, User Management, Audit Review
-
-### 🔄 Phase II: Business Process Modeling (MIS)
-
-![Digital Will Management System - Business Process Flow](screenshots/bpm.png)
-
-**Figure 3: BPMN Business Process Model**
-*Comprehensive business process flow demonstrating Management Information Systems (MIS) integration across four key stakeholders. This swimlane diagram illustrates the complete will management lifecycle from creation to asset distribution, highlighting automated workflows, decision points, and information system integration essential for organizational efficiency.*
-
-#### Process Flow Summary:
-- **Testator Lane:** Will creation, asset definition, beneficiary assignment, submission for approval
-- **Information System Lane:** Data validation, compliance checking, secure storage, automated notifications
-- **Legal Executor Lane:** Will review, approval/rejection decisions, transfer management
-- **Beneficiary Lane:** Notification receipt, status tracking, asset reception confirmation
-
-#### MIS Integration Benefits:
-- **Process Automation:** 50% reduction in manual processing time through automated validation and workflow management
-- **Decision Support:** Real-time data validation, compliance checking, and status tracking for informed decision-making
-- **Information Integration:** Unified data management across all stakeholders with complete audit trails
-- **Organizational Efficiency:** Streamlined communication, transparent processes, and automated compliance monitoring
-
-This business process model exemplifies effective MIS implementation by transforming traditional paper-based estate management into an automated, transparent, and efficient digital workflow that supports strategic organizational objectives.
-
----
-
-## 🗄️ Database Schema
-
-### 📋 Core Tables
-
-| Table Name | Purpose | Key Features |
-|------------|---------|--------------|
-| `users` | User management across all roles | Role-based authentication, enhanced security |
-| `wills` | Will lifecycle management | Status tracking (Draft → Approved → Executed) |
-| `assets` | Asset inventory and valuation | Comprehensive asset categorization |
-| `beneficiaries` | Beneficiary information | Individual and charity support |
-| `executors` | Executor assignments | Primary/secondary executor management |
-| `will_asset_beneficiaries` | Asset allocation mapping | Percentage-based distribution |
-| `transfer_logs` | Transfer execution tracking | Weekend/holiday blocking implementation |
-| `audit_log` | Comprehensive audit trail | Complete activity monitoring |
-
-### 🔒 Advanced Features
-
-- **Constraint Validation:** Ensures asset allocation never exceeds 100%
-- **Weekend/Holiday Blocking:** Prevents transfers during restricted periods
-- **Audit Trail:** Complete logging of all system activities
-- **Role-Based Security:** Granular access control per user type
-- **Data Integrity:** Foreign key relationships and constraint enforcement
-
----
-
-## ⚙️ PL/SQL Implementation
-
-![Digital Will Management System - Business Process Flow](screenshots/create.png)
-![Digital Will Management System - Business Process Flow](screenshots/inter.png)
-![Digital Will Management System - Business Process Flow](screenshots/proced.png)
-
-
-
----
-
-## 🖥️ Web Application Interface
-
-### 🎨 Frontend Technology Stack
-- **HTML5 & CSS3:** Responsive design with modern UI components
-- **JavaScript:** Client-side validation and dynamic interactions  
-- **Bootstrap Framework:** Professional styling and mobile responsiveness
-
-### 🔧 Backend Technology Stack
-- **Flask (Python):** Web application framework
-- **Oracle Database Integration:** Direct PL/SQL procedure calls
-- **Session Management:** Secure user authentication and role management
-
-### 📱 User Interface Screenshots
-
-#### Dashboard Overview
-```
-[Insert Dashboard Screenshot Here]
-```
-*Multi-role dashboard showing role-specific statistics and quick actions*
-
-#### Will Management Interface  
-```
-[Insert Will Management Screenshot Here]
-```
-*Comprehensive will creation and management interface*
-
-#### Asset Allocation System
-```
-[Insert Asset Allocation Screenshot Here]
-```
-*Visual asset allocation with real-time percentage validation*
-
-#### Transfer Management
-```
-[Insert Transfer Management Screenshot Here]
-```
-*Transfer initiation with weekend/holiday blocking demonstration*
-
-#### Admin Panel
-```
-[Insert Admin Panel Screenshot Here]
-```
-*System administration with audit logs and user management*
-
----
-
-## 🧪 Testing & Validation
-
-### ✅ Business Logic Testing
-
-#### Weekend Transfer Blocking
-```
-[Insert Weekend Blocking Test Screenshot Here]
-```
-*Demonstration of weekend transfer restriction with user-friendly error messages*
-
-#### Asset Allocation Validation
-```
-[Insert Allocation Validation Screenshot Here]
-```
-*Testing 100% allocation limit enforcement*
-
-#### Will Approval Process
-```
-[Insert Will Approval Screenshot Here]
-```
-*Complete will approval workflow validation*
-
-### 📊 Sample Data Demonstration
-
-#### Data Insertion Results
-```
-[Insert Sample Data Screenshot Here]
-```
-*Comprehensive test data covering all user roles and scenarios*
-
-#### Query Execution Results
-```
-[Insert Query Results Screenshot Here]
-```
-*Advanced SQL queries demonstrating system capabilities*
-
----
-
-## 🔍 Advanced Database Features
-
-### 📈 Analytics & Reporting
-
-```sql
--- Will Summary Report
-SELECT w.title, w.status, COUNT(a.asset_id) as asset_count,
-       SUM(a.value) as total_value
-FROM wills w
-LEFT JOIN assets a ON w.will_id = a.will_id
-GROUP BY w.will_id, w.title, w.status;
-```
-
-### 🔐 Security Implementation
-
-```sql
--- Audit Trail Query
-SELECT user_name, action, action_table, timestamp, status
-FROM audit_log 
-WHERE timestamp >= SYSDATE - 7
-ORDER BY timestamp DESC;
-```
-
-### 📊 Performance Optimization
-
-- **Indexing Strategy:** Optimized indexes on frequently queried columns
-- **Constraint Implementation:** Database-level validation for data integrity
-- **Transaction Management:** Proper commit/rollback handling
+**Database:** Oracle 19c, PL/SQL (procedures, triggers, packages, exception handling)
+**Backend:** Flask (Python), REST API integration
+**Frontend:** HTML, CSS, JavaScript, Bootstrap
+**Tools:** Git, VS Code, Postman
 
 ---
 
 ## 🚀 Installation & Setup
 
-### 📋 Prerequisites
-- Oracle Database 19c or higher
-- Python 3.8+ with Flask framework
-- Web browser (Chrome, Firefox, Safari)
+**Prerequisites:** Oracle Database, Python 3.8+, Flask, Git, Chrome/Firefox
 
-### ⚙️ Database Setup
-```sql
--- 1. Create database user
-CREATE USER tues_27066_japhet_digitalwill_db IDENTIFIED BY japhet;
-GRANT ALL PRIVILEGES TO tues_27066_japhet_digitalwill_db;
+1️⃣ Clone repository:
 
--- 2. Run schema creation
-@schema_tue_27066_japhet_digitalwill_db.sql
-
--- 3. Create triggers and procedures  
-@triggers_tue_27066_japhet_digitalwill_db.sql
-@procedures_tue_27066_japhet_digitalwill_db.sql
-
--- 4. Insert sample data
-@sample_data_digitalwill.sql
+```bash
+git clone https://github.com/irihojeff/digital-will-management.git
+cd digital-will-management
 ```
 
-### 🌐 Web Application Setup
+2️⃣ Set up Oracle Database:
+
+* Create user:
+
+```sql
+CREATE USER tues_27066_japhet_digitalwill_db IDENTIFIED BY japhet;
+GRANT ALL PRIVILEGES TO tues_27066_japhet_digitalwill_db;
+```
+
+* Run provided schema and sample data scripts.
+
+3️⃣ Install dependencies:
+
 ```bash
-# 1. Install dependencies
 pip install flask flask-session oracledb werkzeug
+```
 
-# 2. Configure database connection
-# Edit config.py with your database credentials
+4️⃣ Configure `config.py` with database credentials.
 
-# 3. Run application
+5️⃣ Run the application:
+
+```bash
 python app.py
 ```
 
-### 🔑 Demo Credentials
-- **Testator:** jean.claude@example.rw (any password)
-- **Executor:** solange.mukamana@lawfirm.rw (any password)  
-- **Beneficiary:** eric.munyaneza@example.rw (any password)
-- **Admin:** admin@digitalwill.rw (any password)
+---
+
+## 🧪 Testing
+
+✅ Weekend transfer blocking and asset allocation validation
+✅ Full will lifecycle execution and audit tracking
+✅ Secure authentication for all user roles
 
 ---
 
-## 📚 Key SQL Queries
+## 📈 Sample SQL Queries
 
-### Data Definition Language (DDL)
+**Will Summary:**
+
 ```sql
--- Enhanced table creation with constraints
-CREATE TABLE wills (
-    will_id NUMBER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
-    user_id NUMBER NOT NULL,
-    title VARCHAR2(200) NOT NULL,
-    status VARCHAR2(20) DEFAULT 'Draft' 
-        CHECK (status IN ('Draft', 'Approved', 'Executed', 'Revoked')),
-    CONSTRAINT fk_wills_user FOREIGN KEY (user_id) REFERENCES users(user_id)
-);
+SELECT w.title, w.status, COUNT(a.asset_id) AS asset_count, SUM(a.value) AS total_value
+FROM wills w
+LEFT JOIN assets a ON w.will_id = a.will_id
+GROUP BY w.will_id, w.title, w.status;
 ```
 
-### Data Manipulation Language (DML)  
-```sql
--- Complex asset allocation query
-SELECT a.name, b.full_name, wab.share_percent,
-       (a.value * wab.share_percent / 100) as inheritance_value
-FROM assets a
-JOIN will_asset_beneficiaries wab ON a.asset_id = wab.asset_id  
-JOIN beneficiaries b ON wab.beneficiary_id = b.beneficiary_id
-WHERE a.will_id = :will_id;
-```
+**Audit Trail:**
 
-### Advanced PL/SQL Features
 ```sql
--- Exception handling in procedures
-BEGIN
-    validate_asset_allocation(p_asset_id);
-EXCEPTION
-    WHEN allocation_exceeded THEN
-        RAISE_APPLICATION_ERROR(-20001, 'Asset allocation exceeds 100%');
-    WHEN OTHERS THEN
-        log_error(SQLERRM);
-        RAISE;
-END;
+SELECT user_name, action, action_table, timestamp, status
+FROM audit_log
+WHERE timestamp >= SYSDATE - 7
+ORDER BY timestamp DESC;
 ```
 
 ---
 
-## 🎯 Business Impact & Benefits
+## 📞 Contact
 
-### 💼 Operational Efficiency
-- **50% reduction** in will processing time
-- **Automated validation** eliminates manual errors  
-- **Real-time tracking** improves transparency
-
-### 🔒 Security & Compliance
-- **Complete audit trails** for legal compliance
-- **Role-based access** ensures data security
-- **Automated restrictions** prevent unauthorized changes
-
-### 📈 Scalability & Maintenance
-- **Modular PL/SQL design** supports easy extensions
-- **Comprehensive logging** facilitates system monitoring
-- **Flexible user roles** accommodate organizational growth
+👤 Japhet Idukundiriho
+📧 [idukundiriho.japhet@auca.ac.rw](mailto:idukundiriho.japhet@auca.ac.rw)
+🌐 [LinkedIn](https://www.linkedin.com/in/japhet-idukundiriho)
+💻 [GitHub](https://github.com/irihojeff/digital-will-management)
 
 ---
 
-## 🔮 Future Enhancements
+## 🚀 Future Enhancements
 
-### 📱 Mobile Application
-- Native mobile app for beneficiaries and executors
-- Push notifications for transfer updates
-- Offline document viewing capabilities
-
-### 🤖 AI Integration  
-- Automated will document parsing
-- Intelligent asset valuation suggestions
-- Predictive analytics for estate planning
-
-### 🌐 Blockchain Integration
-- Immutable will versioning
-- Smart contract execution
-- Distributed asset verification
+✅ Mobile app with push notifications
+✅ AI for asset valuation and document parsing
+✅ Blockchain for immutable will versioning and smart contract execution
 
 ---
 
-## 📞 Contact Information
+## 💡 Purpose
 
-**Student:** Idukundiriho Japhet  
-**Student ID:** 27066  
-**Email:** [idukundiriho.japhet@auca.ac.rw]  
-**GitHub:** https://github.com/irihojeff/digital-will-management.git  
-**Project Database:** `tues_27066_japhet_digitalwill_db`
-
----
-
-## 📖 References
-
-1. Oracle Database 19c Documentation - PL/SQL Programming
-2. Elmasri, R. & Navathe, S. (2017). Fundamentals of Database Systems
-3. Flask Documentation - Web Development with Python
-4. Rwanda Legal Framework - Estate Management Laws
-5. Database Security Best Practices - Oracle Corporation
-
----
-
-*This project represents a comprehensive implementation of advanced PL/SQL programming concepts applied to solve real-world estate management challenges, demonstrating proficiency in database design, stored procedures, triggers, packages, and web application integration.*
+This project demonstrates advanced database programming, backend integration, and real-world application of **MIS principles in estate management**, strengthening readiness for **internships and full-stack developer roles**.
